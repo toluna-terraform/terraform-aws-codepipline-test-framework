@@ -7,7 +7,7 @@ const AWS = require('aws-sdk')
 const path = require('path')
 const codedeploy = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' })
-
+const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const tmpDir = process.env.TMP_DIR || os.tmpdir()
 
 exports.handler = async function (event, context) {
@@ -24,11 +24,11 @@ exports.handler = async function (event, context) {
 
   // Workaround for CodeDeploy bug.
   // Give the ALB 10 seconds to make sure the test TG has switched to the new code.
+  
   const timer = sleep(parseInt(process.env.ALB_WAIT_TIME) * 1000)
-
+  
   // store the error so that we can update codedeploy lifecycle if there are any errors including errors from downloading files
   let error
-
   try {
     const postmanCollections = process.env.POSTMAN_COLLECTIONS
     if (!postmanCollections) {
@@ -36,24 +36,31 @@ exports.handler = async function (event, context) {
     } else {
       const postmanList = JSON.parse(postmanCollections)
       const promises = [timer]
+      var params = {
+    deploymentId: deploymentId /* required */
+  };
+    let env_name = await cd.getDeployment(params, function(err, data) {
+    if (err) 
+      { 
+        console.log(err, err.stack); // an error occurred
+      }
+      else {
+      }// successful response
+      }).promise()
+      const environment = env_name.deploymentInfo.applicationName.split("-").pop();
       for (const each of postmanList) {
         if (each.collection.includes('.json')) {
-          promises.push(downloadFileFromBucket(each.collection))
+          promises.push(downloadFileFromBucket(environment,each.collection))
           each.collection = `${tmpDir}${sep}${path.basename(each.collection)}`
-        } else {
-          promises.push(downloadFileFromPostman('collection', each.collection))
-          each.collection = `${tmpDir}${sep}${path.basename(each.collection)}.json`
-        }
+        } 
         if (each.environment) { // environment can be null
           if (each.environment.includes('.json')) {
-            promises.push(downloadFileFromBucket(each.environment))
+            promises.push(downloadFileFromBucket(environment,each.environment))
             each.environment = `${tmpDir}${sep}${path.basename(each.environment)}`
-          } else {
-            promises.push(downloadFileFromPostman('environment', each.environment))
-            each.environment = `${tmpDir}${sep}${path.basename(each.environment)}.json`
-          }
+          } 
         }
       }
+      
       // make sure all files are downloaded and we wait for 10 seconds before executing postman tests
       await Promise.all(promises)
 
@@ -79,30 +86,12 @@ exports.handler = async function (event, context) {
   if (error) throw error // Cause the lambda to "fail"
 }
 
-async function downloadFileFromPostman (type, id) {
-  const filename = `${tmpDir}${sep}${id}.json`
-  console.log(`started download for ${filename}`)
-  const response = await fetch(`https://api.getpostman.com/${type}s/${id}`, {
-    method: 'GET',
-    headers: {
-      'X-Api-Key': process.env.POSTMAN_API_KEY
-    }
-  }).catch(err => {
-    throw new Error(`Error trying to download ${type} ${id} from Postman API: ${err}`)
-  })
-  const data = await response.text()
-  if (response.status !== 200) {
-    const errorData = JSON.parse(data)
-    throw new Error(`Error trying to download ${type} ${id} from Postman API: ${errorData.error.message}`)
-  }
-  await fs.writeFile(filename, data)
-  console.log(`downloaded ${filename}`)
-}
-
-async function downloadFileFromBucket (key) {
+async function downloadFileFromBucket (env_name,key) {
+  
   // Stripping relative path off of key.
   key = path.basename(key)
-
+  key = `${env_name}/${key}`
+  console.log(`env key is ::${key}`)
   const filename = `${tmpDir}${sep}${key}`
   console.log(`started download for ${key} from s3 bucket`)
 
@@ -189,3 +178,4 @@ function sleep (ms) {
     resolve()
   }, ms))
 }
+

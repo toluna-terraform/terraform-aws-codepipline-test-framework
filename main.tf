@@ -40,6 +40,11 @@ resource "aws_s3_bucket_public_access_block" "postman_bucket" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_policy" "postman_bucket" {
+  bucket = aws_s3_bucket.postman_bucket.id
+  policy = data.aws_iam_policy_document.postman_bucket.json
+}
+
 resource "null_resource" "layer_zip" {
   triggers = {
     always_run = "${timestamp()}"
@@ -115,8 +120,10 @@ resource "aws_iam_role" "test_framework" {
       "Action": "sts:AssumeRole",
       "Principal": {
         "Service": [
+          "s3.amazonaws.com",
+          "codedeploy.amazonaws.com",
           "lambda.amazonaws.com"
-          ]
+        ]
       },
       "Effect": "Allow",
       "Sid": ""
@@ -139,4 +146,14 @@ resource "aws_iam_role_policy_attachment" "role-lambda-ssm" {
 resource "aws_iam_role_policy_attachment" "role-cloudwatch" {
     role       = "${aws_iam_role.test_framework.name}"
     policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "role-codedeploy" {
+    role       = "${aws_iam_role.test_framework.name}"
+    policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "role-s3" {
+    role       = "${aws_iam_role.test_framework.name}"
+    policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
