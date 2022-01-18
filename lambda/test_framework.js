@@ -79,6 +79,7 @@ exports.handler = async function (event, context) {
         }
       }
     }
+    
     await updateRunner(deploymentId, combinedRunner, event, error)
   } catch (e) {
     await updateRunner(deploymentId, combinedRunner, event, true)
@@ -90,11 +91,17 @@ exports.handler = async function (event, context) {
 const uploadFile = (fileName,environment,deploymentId) => {
     // Read content from the file
     const fileContent = filesys.readFileSync(fileName);
-
     // Setting up S3 upload parameters
+    let suffix
+    if (fileName.endsWith("html")) {
+      suffix = 'html'
+    } else {
+      suffix = 'txt'
+    }
+    
     const params = {
         Bucket: process.env.S3_BUCKET,
-        Key: `reports/${environment}/report_${deploymentId}.html`, // File name you want to save as in S3
+        Key: `reports/${environment}/report_${deploymentId}.${suffix}`, // File name you want to save as in S3
         Body: fileContent
     };
 
@@ -113,7 +120,6 @@ async function downloadFileFromBucket (env_name,key) {
   key = path.basename(key)
   const filename = `${tmpDir}${sep}${key}`
   key = `${env_name}/${key}`
-  console.log(`env key is ::${key}`)
   console.log(`started download for ${key} from s3 bucket`)
 
   let data
@@ -132,10 +138,40 @@ async function downloadFileFromBucket (env_name,key) {
   return filename
 }
 
-function newmanRun (options) {
+async function createBBComment(bb_comment,environment,deploymentId){
+  await fs.writeFile('/tmp/response.txt', bb_comment)
+  uploadFile('/tmp/response.txt',environment,deploymentId)
+}
+
+function newmanRun (options,environment,deploymentId) {
+  var results = [];
+  var bb_output = "";
   return new Promise((resolve, reject) => {
-    newman.run(options, err => {
-      err ? reject(err) : resolve()
+    newman.run(options)
+    .on('beforeDone', (err, args) => {
+      if (err) { 
+          console.log(`Err done:::::${err}`)
+          err ? reject(err) : resolve()
+       }
+        //Calling Function to Run After Capturing the Neccessary Data
+        bb_output = `| --- | --- | --- |\n|     | Executed | Failed |\n 
+        | iterations | ${JSON.stringify(args.summary.run.stats.iterations.total)} | ${JSON.stringify(args.summary.run.stats.iterations.failed)} |\n| --- | --- | --- |\n 
+        | requests | ${JSON.stringify(args.summary.run.stats.requests.total)} | ${JSON.stringify(args.summary.run.stats.requests.failed)} |\n| --- | --- | --- |\n
+        | test-scripts | ${JSON.stringify(args.summary.run.stats.testScripts.total)} | ${JSON.stringify(args.summary.run.stats.testScripts.failed)} |\n| --- | --- | --- |\n
+        | prerequest-scripts | ${JSON.stringify(args.summary.run.stats.prerequestScripts.total)} | ${JSON.stringify(args.summary.run.stats.prerequestScripts.failed)} |\n| --- | --- | --- |\n
+        | assertions | ${JSON.stringify(args.summary.run.stats.assertions.total)} | ${JSON.stringify(args.summary.run.stats.assertions.failed)} |\n| --- | --- | --- |\n`
+        createBBComment(bb_output,environment,deploymentId)
+        if (JSON.stringify(args.summary.error) || args.summary.run.failures.length) {
+          console.error('collection run encountered errors or test failures')
+          err = true
+          err ? reject(err) : resolve()
+        }
+        })
+    .on('done', function (err, args) {
+      if (err) { 
+          console.log(`Err done:::::${err}`)
+          err ? reject(err) : resolve()
+       }
     })
   })
 }
@@ -162,7 +198,7 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
         },
       abortOnFailure: true,
       envVar: generateEnvVars()
-    })
+    },environment,deploymentId)
     console.log('collection run complete!')
     uploadFile('/tmp/report.html',environment,deploymentId);
   } catch (err) {
