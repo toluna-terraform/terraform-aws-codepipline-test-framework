@@ -150,8 +150,8 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
       reporter: {
         htmlextra: {
             export: '/tmp/report.html',
-            browserTitle: `${environment} Tests report`,
-            title: `${environment} Tests report`,
+            browserTitle: `${process.env.APP_NAME} ${environment} Tests report`,
+            title: `${process.env.APP_NAME} ${environment} Tests report`,
             titleSize: 4,
             showEnvironmentData: true,
             showGlobalData: true,

@@ -20,6 +20,7 @@ locals {
     ALB_WAIT_TIME          = var.alb_wait_time
     S3_BUCKET              = local.using_local_files ? aws_s3_bucket.postman_bucket.bucket : null
     POSTMAN_COLLECTIONS    = jsonencode(var.postman_collections)
+    APP_NAME               = var.app_name
     TEST_ENV_VAR_OVERRIDES = jsonencode(var.test_env_var_overrides)
   }
   lambda_function_name = "${var.app_name}-postman-tests"
