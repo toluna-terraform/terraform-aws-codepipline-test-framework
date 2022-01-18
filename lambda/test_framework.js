@@ -1,5 +1,6 @@
 const fetch = require('node-fetch')
 const fs = require('fs').promises
+const filesys = require('fs')
 const os = require('os')
 const { sep } = require('path')
 const newman = require('newman')
@@ -45,6 +46,7 @@ exports.handler = async function (event, context) {
         console.log(err, err.stack); // an error occurred
       }
       else {
+        console.log(data)
       }// successful response
       }).promise()
       const environment = env_name.deploymentInfo.applicationName.split("-").pop();
@@ -70,13 +72,12 @@ exports.handler = async function (event, context) {
         for (const each of postmanList) {
           if (!error) {
             // don't run later collections if previous one errored out
-            await runTest(each.collection, each.environment).catch(err => {
+            await runTest(each.collection, each.environment,environment,deploymentId).catch(err => {
               error = err
             })
           }
         }
       }
-      console.log('postman tests finished')
     }
     await updateRunner(deploymentId, combinedRunner, event, error)
   } catch (e) {
@@ -86,13 +87,33 @@ exports.handler = async function (event, context) {
   if (error) throw error // Cause the lambda to "fail"
 }
 
+const uploadFile = (fileName,environment,deploymentId) => {
+    // Read content from the file
+    const fileContent = filesys.readFileSync(fileName);
+
+    // Setting up S3 upload parameters
+    const params = {
+        Bucket: process.env.S3_BUCKET,
+        Key: `reports/${environment}/report_${deploymentId}.html`, // File name you want to save as in S3
+        Body: fileContent
+    };
+
+    // Uploading files to the bucket
+    s3.upload(params, function(err, data) {
+        if (err) {
+            throw err;
+        }
+        console.log(`File uploaded successfully. ${data.Location}`);
+    });
+};
+
 async function downloadFileFromBucket (env_name,key) {
   
   // Stripping relative path off of key.
   key = path.basename(key)
+  const filename = `${tmpDir}${sep}${key}`
   key = `${env_name}/${key}`
   console.log(`env key is ::${key}`)
-  const filename = `${tmpDir}${sep}${key}`
   console.log(`started download for ${key} from s3 bucket`)
 
   let data
@@ -119,17 +140,31 @@ function newmanRun (options) {
   })
 }
 
-async function runTest (postmanCollection, postmanEnvironment) {
+async function runTest (postmanCollection, postmanEnvironment,environment,deploymentId) {
   try {
     console.log(`running postman test for ${postmanCollection}`)
     await newmanRun({
       collection: postmanCollection,
       environment: postmanEnvironment,
-      reporters: 'cli',
+      reporters: ['cli','htmlextra'],
+      reporter: {
+        htmlextra: {
+            export: '/tmp/report.html',
+            browserTitle: `${environment} Tests report`,
+            title: `${environment} Tests report`,
+            titleSize: 4,
+            showEnvironmentData: true,
+            showGlobalData: true,
+            skipSensitiveData: true,
+            showMarkdownLinks: true,
+            timezone: "Israel",
+            }
+        },
       abortOnFailure: true,
       envVar: generateEnvVars()
     })
     console.log('collection run complete!')
+    uploadFile('/tmp/report.html',environment,deploymentId);
   } catch (err) {
     console.log(err)
     throw err
