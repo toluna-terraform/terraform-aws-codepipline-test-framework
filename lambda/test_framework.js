@@ -6,9 +6,11 @@ const { sep } = require('path')
 const newman = require('newman')
 const AWS = require('aws-sdk')
 const path = require('path')
+const https = require('https')
 const codedeploy = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
+const ssm = new AWS.SSM();
 const tmpDir = process.env.TMP_DIR || os.tmpdir()
 
 exports.handler = async function (event, context) {
@@ -92,16 +94,12 @@ const uploadFile = (fileName,environment,deploymentId) => {
     // Read content from the file
     const fileContent = filesys.readFileSync(fileName);
     // Setting up S3 upload parameters
-    let suffix
-    if (fileName.endsWith("html")) {
-      suffix = 'html'
-    } else {
-      suffix = 'txt'
-    }
+    let suffix = `_${deploymentId}.html`
+    
     
     const params = {
         Bucket: process.env.S3_BUCKET,
-        Key: `reports/${environment}/report_${deploymentId}.${suffix}`, // File name you want to save as in S3
+        Key: `reports/${environment}/report${suffix}`, // File name you want to save as in S3
         Body: fileContent
     };
 
@@ -138,10 +136,62 @@ async function downloadFileFromBucket (env_name,key) {
   return filename
 }
 
-async function createBBComment(bb_comment,environment,deploymentId){
-  await fs.writeFile('/tmp/response.txt', bb_comment)
-  uploadFile('/tmp/response.txt',environment,deploymentId)
-}
+async function createBBComment(bb_comment){
+    var username = ""
+    var password = ""
+    var un_params = {
+        Names: [
+          '/app/bb_user',
+        ],
+        WithDecryption: true 
+      };
+    var up_params = {
+      Names: [
+        '/app/bb_pass',
+      ],
+      WithDecryption: true 
+    };
+    await ssm.getParameters(un_params, function(err, data) {
+      if (err) console.log(err, err.stack); // an error occurred
+      else     {
+        username = JSON.stringify(data.Parameters[0].Value)// successful response
+        ssm.getParameters(up_params, function(err, data) {
+        if (err) console.log(err, err.stack); // an error occurred
+        else     {
+          password = JSON.stringify(data.Parameters[0].Value)// successful response
+          const body = JSON.stringify({
+            content:{
+              raw: bb_comment
+            }
+          })
+          const options = {
+            hostname: 'api.bitbucket.org',
+            port: 443,
+            path: `/2.0/repositories/tolunaengineering/${process.env.APP_NAME}/pullrequests/224/comments`,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': body.length,
+              'Authorization': 'Basic ' + new Buffer(username+ ':' + password).toString('base64')
+            }
+          }
+      
+          const req = https.request(options, res => {
+            res.on('data', d => {
+              process.stdout.write(d)
+            })
+          })
+      
+          req.on('error', error => {
+            console.error(error)
+          })
+          req.write(body)
+          req.end()
+        }
+      });
+      }
+    });
+    }
 
 function newmanRun (options,environment,deploymentId) {
   var results = [];
