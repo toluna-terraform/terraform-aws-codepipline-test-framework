@@ -149,10 +149,15 @@ function newmanRun (options,environment,deploymentId) {
     .on('done', function (err, args) {
       if (err) { 
           reject(err)
-       } else {
-          console.log("collection done !!!")
-          resolve()  
-        }  
+      }
+      else if (newmanRunFailed) {
+        uploadFile('/tmp/report.html',environment,deploymentId);
+        uploadFile('/tmp/report.xml',environment,deploymentId);
+        reject('collection run encountered errors or test failures')
+      } else {
+        console.log("collection done !!!")
+        resolve()  
+      }  
     })
   })
 }
@@ -184,11 +189,6 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
       envVar: generateEnvVars()
     },environment,deploymentId)
     console.log('collection run complete!')
-    uploadFile('/tmp/report.html',environment,deploymentId);
-    uploadFile('/tmp/report.xml',environment,deploymentId);
-    if (newmanRunFailed) {
-      throw new Error('collection run encountered errors or test failures');
-    }
   } catch (err) {
     console.log(err)
     throw err
@@ -237,3 +237,4 @@ function sleep (ms) {
     resolve()
   }, ms))
 }
+
