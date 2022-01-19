@@ -6,6 +6,7 @@ const { sep } = require('path')
 const newman = require('newman')
 const AWS = require('aws-sdk')
 const path = require('path')
+const AdmZip = require("adm-zip");
 const codedeploy = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
@@ -89,16 +90,16 @@ exports.handler = async function (event, context) {
   if (error) throw error // Cause the lambda to "fail"
 }
 
-const uploadFile = (filename,environment,deploymentId) => {
-    // Read content from the file
-    const fileContent = filesys.readFileSync(filename);
-    // Setting up S3 upload parameters
-    let extension = filename.split(".").pop();
-    
-    
+const uploadReports = (environment,deploymentId) => {
+
+    const zip = new AdmZip();
+    const outputFile = `/tmp/${deploymentId}.zip`;
+    zip.addLocalFolder(`/tmp/${deploymentId}`);
+    zip.writeZip(outputFile);
+    const fileContent = filesys.readFileSync(outputFile);
     const params = {
         Bucket: process.env.S3_BUCKET,
-        Key: `reports/${environment}/${deploymentId}/report.${extension}`, // File name you want to save as in S3
+        Key: `reports/${environment}/${deploymentId}.zip`, // File name you want to save as in S3
         Body: fileContent
     };
 
@@ -149,15 +150,10 @@ function newmanRun (options,environment,deploymentId) {
     .on('done', function (err, args) {
       if (err) { 
           reject(err)
-      }
-      else if (newmanRunFailed) {
-        uploadFile('/tmp/report.html',environment,deploymentId);
-        uploadFile('/tmp/report.xml',environment,deploymentId);
-        reject('collection run encountered errors or test failures')
-      } else {
-        console.log("collection done !!!")
-        resolve()  
-      }  
+       } else {
+          console.log("collection done !!!")
+          resolve()  
+        }  
     })
   })
 }
@@ -171,7 +167,7 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
       reporters: ['htmlextra','junitfull'],
       reporter: {
         htmlextra: {
-            export: '/tmp/report.html',
+            export: `/tmp/${deploymentId}/report.html`,
             browserTitle: `${process.env.APP_NAME} ${environment} Tests report`,
             title: `${process.env.APP_NAME} ${environment} Tests report`,
             titleSize: 4,
@@ -182,13 +178,17 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
             timezone: "Israel",
             },
         junitfull: {
-            export: '/tmp/report.xml', 
+            export: `/tmp/${deploymentId}/report.xml`, 
             } 
         },
       abortOnFailure: true,
       envVar: generateEnvVars()
     },environment,deploymentId)
     console.log('collection run complete!')
+    uploadReports(environment,deploymentId);
+    if (newmanRunFailed) {
+      throw new Error('collection run encountered errors or test failures');
+    }
   } catch (err) {
     console.log(err)
     throw err
@@ -237,4 +237,3 @@ function sleep (ms) {
     resolve()
   }, ms))
 }
-
