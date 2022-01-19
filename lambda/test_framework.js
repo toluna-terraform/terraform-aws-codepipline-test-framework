@@ -6,12 +6,11 @@ const { sep } = require('path')
 const newman = require('newman')
 const AWS = require('aws-sdk')
 const path = require('path')
-const https = require('https')
 const codedeploy = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
-const ssm = new AWS.SSM();
 const tmpDir = process.env.TMP_DIR || os.tmpdir()
+let newmanRunFailed = false
 
 exports.handler = async function (event, context) {
   console.log('event', event)
@@ -90,16 +89,16 @@ exports.handler = async function (event, context) {
   if (error) throw error // Cause the lambda to "fail"
 }
 
-const uploadFile = (fileName,environment,deploymentId) => {
+const uploadFile = (filename,environment,deploymentId) => {
     // Read content from the file
-    const fileContent = filesys.readFileSync(fileName);
+    const fileContent = filesys.readFileSync(filename);
     // Setting up S3 upload parameters
-    let suffix = `_${deploymentId}.html`
+    let extension = filename.split(".").pop();
     
     
     const params = {
         Bucket: process.env.S3_BUCKET,
-        Key: `reports/${environment}/report${suffix}`, // File name you want to save as in S3
+        Key: `reports/${environment}/${deploymentId}/report.${extension}`, // File name you want to save as in S3
         Body: fileContent
     };
 
@@ -136,92 +135,24 @@ async function downloadFileFromBucket (env_name,key) {
   return filename
 }
 
-async function createBBComment(bb_comment){
-    var username = ""
-    var password = ""
-    var un_params = {
-        Names: [
-          '/app/bb_user',
-        ],
-        WithDecryption: true 
-      };
-    var up_params = {
-      Names: [
-        '/app/bb_pass',
-      ],
-      WithDecryption: true 
-    };
-    await ssm.getParameters(un_params, function(err, data) {
-      if (err) console.log(err, err.stack); // an error occurred
-      else     {
-        username = JSON.stringify(data.Parameters[0].Value)// successful response
-        ssm.getParameters(up_params, function(err, data) {
-        if (err) console.log(err, err.stack); // an error occurred
-        else     {
-          password = JSON.stringify(data.Parameters[0].Value)// successful response
-          const body = JSON.stringify({
-            content:{
-              raw: bb_comment
-            }
-          })
-          const options = {
-            hostname: 'api.bitbucket.org',
-            port: 443,
-            path: `/2.0/repositories/tolunaengineering/${process.env.APP_NAME}/pullrequests/224/comments`,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': body.length,
-              'Authorization': 'Basic ' + new Buffer(username+ ':' + password).toString('base64')
-            }
-          }
-      
-          const req = https.request(options, res => {
-            res.on('data', d => {
-              process.stdout.write(d)
-            })
-          })
-      
-          req.on('error', error => {
-            console.error(error)
-          })
-          req.write(body)
-          req.end()
-        }
-      });
-      }
-    });
-    }
-
 function newmanRun (options,environment,deploymentId) {
-  var results = [];
-  var bb_output = "";
   return new Promise((resolve, reject) => {
     newman.run(options)
-    .on('beforeDone', (err, args) => {
+        .on('beforeDone', (err, args) => {
       if (err) { 
-          console.log(`Err done:::::${err}`)
-          err ? reject(err) : resolve()
+          reject(err)
        }
-        //Calling Function to Run After Capturing the Neccessary Data
-        bb_output = `| --- | --- | --- |\n|     | Executed | Failed |\n 
-        | iterations | ${JSON.stringify(args.summary.run.stats.iterations.total)} | ${JSON.stringify(args.summary.run.stats.iterations.failed)} |\n| --- | --- | --- |\n 
-        | requests | ${JSON.stringify(args.summary.run.stats.requests.total)} | ${JSON.stringify(args.summary.run.stats.requests.failed)} |\n| --- | --- | --- |\n
-        | test-scripts | ${JSON.stringify(args.summary.run.stats.testScripts.total)} | ${JSON.stringify(args.summary.run.stats.testScripts.failed)} |\n| --- | --- | --- |\n
-        | prerequest-scripts | ${JSON.stringify(args.summary.run.stats.prerequestScripts.total)} | ${JSON.stringify(args.summary.run.stats.prerequestScripts.failed)} |\n| --- | --- | --- |\n
-        | assertions | ${JSON.stringify(args.summary.run.stats.assertions.total)} | ${JSON.stringify(args.summary.run.stats.assertions.failed)} |\n| --- | --- | --- |\n`
-        createBBComment(bb_output,environment,deploymentId)
-        if (JSON.stringify(args.summary.error) || args.summary.run.failures.length) {
-          console.error('collection run encountered errors or test failures')
-          err = true
-          err ? reject(err) : resolve()
+       else if (JSON.stringify(args.summary.error) || args.summary.run.failures.length) {
+          newmanRunFailed = true
         }
         })
     .on('done', function (err, args) {
       if (err) { 
-          console.log(`Err done:::::${err}`)
-          err ? reject(err) : resolve()
-       }
+          reject(err)
+       } else {
+          console.log("collection done !!!")
+          resolve()  
+        }  
     })
   })
 }
@@ -232,7 +163,7 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
     await newmanRun({
       collection: postmanCollection,
       environment: postmanEnvironment,
-      reporters: ['cli','htmlextra'],
+      reporters: ['htmlextra','junitfull'],
       reporter: {
         htmlextra: {
             export: '/tmp/report.html',
@@ -244,13 +175,20 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
             skipSensitiveData: true,
             showMarkdownLinks: true,
             timezone: "Israel",
-            }
+            },
+        junitfull: {
+            export: '/tmp/report.xml', 
+            } 
         },
       abortOnFailure: true,
       envVar: generateEnvVars()
     },environment,deploymentId)
     console.log('collection run complete!')
     uploadFile('/tmp/report.html',environment,deploymentId);
+    uploadFile('/tmp/report.xml',environment,deploymentId);
+    if (newmanRunFailed) {
+      throw new Error('collection run encountered errors or test failures');
+    }
   } catch (err) {
     console.log(err)
     throw err
@@ -299,4 +237,3 @@ function sleep (ms) {
     resolve()
   }, ms))
 }
-
