@@ -1,19 +1,11 @@
 data "aws_caller_identity" "current" {}
 
-data "aws_iam_policy_document" "postman_bucket" {
-  statement {
-    principals {
-      type        = "AWS"
-      identifiers = ["${aws_iam_role.test_framework.arn}"]
-    }
+data "aws_region" "current" {}
 
-    actions = [
-      "s3:*"
-    ]
+data "aws_ssm_parameter" "ado_password" {
+  name = "/app/ado_password"
+}
 
-    resources = [
-      aws_s3_bucket.postman_bucket.arn,
-      "${aws_s3_bucket.postman_bucket.arn}/*",
-    ]
-  }
+data "aws_ssm_parameter" "ado_user" {
+  name = "/app/ado_user"
 }

@@ -10,6 +10,8 @@ const AdmZip = require("adm-zip");
 const codedeploy = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' })
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' })
+const cb = new AWS.CodeBuild({apiVersion: '2016-10-06', region: 'us-east-1'});
+
 const tmpDir = process.env.TMP_DIR || os.tmpdir()
 let newmanRunFailed = false
 
@@ -90,8 +92,7 @@ exports.handler = async function (event, context) {
   if (error) throw error // Cause the lambda to "fail"
 }
 
-const uploadReports = (environment,deploymentId) => {
-
+async function uploadReports (environment,deploymentId) {
     const zip = new AdmZip();
     const outputFile = `/tmp/${deploymentId}.zip`;
     zip.addLocalFolder(`/tmp/${deploymentId}`);
@@ -104,7 +105,26 @@ const uploadReports = (environment,deploymentId) => {
     };
 
     // Uploading files to the bucket
-    s3.upload(params, function(err, data) {
+    await s3.upload(params, function(err, data) {
+        if (err) {
+            throw err;
+        }
+        console.log(`File uploaded successfully. ${data.Location}`);
+    });
+    const cbParams = {
+      projectName: `codebuild-publish-reports-${process.env.APP_NAME}-${process.env.ENV_TYPE}`,
+      privilegedModeOverride: true,
+      environmentVariablesOverride: [
+        {
+          name: 'ENV_NAME',
+          value: `${environment}`,
+          type: 'PLAINTEXT'
+        },
+      ],
+      sourceLocationOverride: `${process.env.S3_BUCKET}/reports/${environment}/${deploymentId}.zip`,
+      sourceTypeOverride: 'S3'
+    }
+    await cb.startBuild(cbParams, function(err, data) {
         if (err) {
             throw err;
         }
