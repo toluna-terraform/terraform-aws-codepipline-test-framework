@@ -21,7 +21,7 @@ locals {
     S3_BUCKET              = local.using_local_files ? aws_s3_bucket.postman_bucket.bucket : null
     POSTMAN_COLLECTIONS    = jsonencode(var.postman_collections)
     APP_NAME               = var.app_name
-    env_type               = var.env_type
+    ENV_TYPE               = var.env_type
     TEST_ENV_VAR_OVERRIDES = jsonencode(var.test_env_var_overrides)
   }
   lambda_function_name = "${var.app_name}-postman-tests"
