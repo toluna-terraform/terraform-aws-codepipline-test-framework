@@ -14,7 +14,7 @@ const cb = new AWS.CodeBuild({apiVersion: '2016-10-06', region: 'us-east-1'});
 
 const tmpDir = process.env.TMP_DIR || os.tmpdir()
 let newmanRunFailed = false
-let test_status = "PASSED"
+let test_status = "SUCCESS"
 
 exports.handler = async function (event, context) {
   console.log('event', event)
@@ -113,7 +113,7 @@ async function uploadReports (environment,deploymentId) {
         console.log(`File uploaded successfully. ${data.Location}`);
     });
     if (newmanRunFailed) {
-      test_status = "FAILED"
+      test_status = "FAILURE"
     }
     const cbParams = {
       projectName: `codebuild-publish-reports-${process.env.APP_NAME}-${process.env.ENV_TYPE}`,
@@ -139,6 +139,12 @@ async function uploadReports (environment,deploymentId) {
           value: `${process.env.APP_NAME}`,
           type: 'PLAINTEXT'
         },
+        {
+          name: 'DESCRIPTION',
+          value: `Build ${test_status} for project ${process.env.APP_NAME}-${environment}`,
+          type: 'PLAINTEXT'
+        },
+        
       ],
       sourceLocationOverride: `${process.env.S3_BUCKET}/reports/${environment}/${deploymentId}.zip`,
       sourceTypeOverride: 'S3'
