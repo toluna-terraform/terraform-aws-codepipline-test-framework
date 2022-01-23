@@ -76,7 +76,8 @@ resource "aws_lambda_layer_version" "lambda_layer" {
   filename   = "${path.module}/layer.zip"
   layer_name = "postman"
   compatible_runtimes = ["nodejs12.x"]
-  source_code_hash = "${data.archive_file.layer_zip.output_base64sha256}"
+  depends_on = [data.archive_file.layer_zip]
+  #source_code_hash = "${data.archive_file.layer_zip.output_base64sha256}"
 }
 
 data "archive_file" "lambda_zip" {
@@ -97,6 +98,7 @@ resource "aws_lambda_function" "test_framework" {
   environment {
     variables = local.lambda_env_variables
   }
+  depends_on = [aws_lambda_layer_version.lambda_layer,data.archive_file.lambda_zip]
 }
 
 resource "null_resource" "remove_zip" {
@@ -106,7 +108,7 @@ resource "null_resource" "remove_zip" {
   provisioner "local-exec" {
     when = create
     command = <<-EOT
-      rm -f ${path.module}/*.zip
+      rm -f -R ${path.module}/*.zip
       rm -rf ${path.module}/lambda/dist
       EOT
   }
