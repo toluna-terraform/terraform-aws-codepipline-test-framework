@@ -77,7 +77,7 @@ resource "aws_lambda_layer_version" "lambda_layer" {
   layer_name = "postman"
   compatible_runtimes = ["nodejs12.x"]
   depends_on = [data.archive_file.layer_zip]
-  #source_code_hash = "${data.archive_file.layer_zip.output_base64sha256}"
+  source_code_hash = "${data.archive_file.layer_zip.output_base64sha256}"
 }
 
 data "archive_file" "lambda_zip" {
