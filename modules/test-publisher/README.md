@@ -16,17 +16,14 @@ The following resources will be created:
 
 ## Usage
 ```hcl
-module "test_framework" {
-  source                = "toluna-terraform/codepipeline-test-framework"
-  app_name = local.app_name
-  env_type = local.env_vars.env_type
-  postman_collections = [
-  {
-    collection = "chorus.postman_collection.json"
-    environment = "postman_environment.json"
-  }
-  ]
-}
+module "test_reports" {
+  source                                = "./modules/test-publisher"
+  app_name                              = var.app_name
+  env_type                              = var.env_type
+  codebuild_name                        = "tests-reports-${var.app_name}"
+  s3_bucket                             = "${var.app_name}-${var.env_type}-postman-tests"
+  privileged_mode                       = true
+  environment_variables_parameter_store = var.environment_variables_parameter_store
 }
 ```
 

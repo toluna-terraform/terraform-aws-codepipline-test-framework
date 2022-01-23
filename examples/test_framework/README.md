@@ -17,7 +17,7 @@ The following resources will be created:
 ## Usage
 ```hcl
 module "mongodb" {
-  source                = "toluna-terraform/codepipeline-test-framework"
+  source  = "toluna-terraform/codepipline-test-framework/aws"
   app_name = local.app_name
   env_type = local.env_vars.env_type
   postman_collections = [
