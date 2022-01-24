@@ -54,7 +54,7 @@ exports.handler = async function (event, context) {
         console.log(data)
       }// successful response
       }).promise()
-      const environment = env_name.deploymentInfo.applicationName.split("-").pop();
+      const environment = env_name.deploymentInfo.applicationName.split("-")[2];
       for (const each of postmanList) {
         if (each.collection.includes('.json')) {
           promises.push(downloadFileFromBucket(environment,each.collection))
