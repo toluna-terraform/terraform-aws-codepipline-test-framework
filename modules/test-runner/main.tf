@@ -50,69 +50,26 @@ resource "aws_s3_bucket_policy" "postman_bucket" {
   policy = data.aws_iam_policy_document.postman_bucket.json
 }
 
-resource "null_resource" "layer_zip" {
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-  provisioner "local-exec" {
-    when = create
-    command = <<-EOT
-      mkdir -p ${path.module}/lambda/dist/nodejs
-      cp ${path.module}/lambda/*.json ${path.module}/lambda/dist/nodejs
-      cd ${path.module}/lambda/dist/nodejs
-      npm install
-    EOT
-  }
-}
-
-data "archive_file" "layer_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda/dist"
-  output_path = "${path.module}/layer.zip"
-  depends_on = [null_resource.layer_zip]
-}
-
 resource "aws_lambda_layer_version" "lambda_layer" {
-  filename   = "${path.module}/layer.zip"
+  filename   = "${path.module}/layer/layer.zip"
   layer_name = "postman"
   compatible_runtimes = ["nodejs12.x"]
-  depends_on = [data.archive_file.layer_zip]
-  source_code_hash = "${data.archive_file.layer_zip.output_base64sha256}"
-}
-
-data "archive_file" "lambda_zip" {
- type        = "zip"
-  source_dir  = "${path.module}/lambda/"
-  output_path = "${path.module}/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
 resource "aws_lambda_function" "test_framework" {
-  filename      = "${path.module}/lambda.zip"
+  filename      = "${path.module}/lambda/lambda.zip"
   function_name = "${var.app_name}-${var.env_type}-test-framework"
   role          = aws_iam_role.test_framework.arn
   handler       = "test_framework.handler"
   runtime       = "nodejs12.x"
   layers = [aws_lambda_layer_version.lambda_layer.arn]
   timeout       = 180
-  source_code_hash = "${data.archive_file.lambda_zip.output_base64sha256}"
+  source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
   environment {
     variables = local.lambda_env_variables
   }
-  depends_on = [aws_lambda_layer_version.lambda_layer,data.archive_file.lambda_zip]
-}
-
-resource "null_resource" "remove_zip" {
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-  provisioner "local-exec" {
-    when = create
-    command = <<-EOT
-      rm -f -R ${path.module}/*.zip
-      rm -rf ${path.module}/lambda/dist
-      EOT
-  }
-  depends_on = [aws_lambda_function.test_framework]
+  depends_on = [aws_lambda_layer_version.lambda_layer]
 }
 
 # IAM

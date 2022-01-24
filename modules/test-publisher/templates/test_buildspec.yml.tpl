@@ -1,5 +1,11 @@
 version: 0.2
 
+env:
+  parameter-store:
+    USER: "/app/bb_user"  
+    PASS: "/app/bb_app_pass"
+    CONSUL_PROJECT_ID: "/infra/$APP_NAME-$ENV_TYPE/consul_project_id"
+    CONSUL_HTTP_TOKEN: "/infra/$APP_NAME-$ENV_TYPE/consul_http_token"
 
 phases:
   pre_build:
@@ -8,11 +14,7 @@ phases:
         - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
         - yum -y install terraform
         - yum install -y yum-utils consul
-        - export CONSUL_PROJECT_ID=$(aws ssm get-parameter --name "/infra/$APP_NAME-$ENV_TYPE/consul_project_id" --with-decryption --query 'Parameter.Value' --output text)
-        - export CONSUL_HTTP_TOKEN=$(aws ssm get-parameter --name "/infra/$APP_NAME-$ENV_TYPE/consul_http_token" --with-decryption --query 'Parameter.Value' --output text)
         - export CONSUL_HTTP_ADDR=https://consul-cluster-test.consul.$CONSUL_PROJECT_ID.aws.hashicorp.cloud
-        - USER=$(echo $(aws ssm get-parameter --name /app/bb_user --with-decryption) | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameter']['Value'])")
-        - PASS=$(echo $(aws ssm get-parameter --name /app/bb_pass --with-decryption) | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameter']['Value'])")
         - REPORT_URL="https://console.aws.amazon.com/codesuite/codebuild/testReports/reportGroups/codebuild-publish-reports-$APP_NAME-$ENV_TYPE-integration-test-reports-$ENV_NAME"
         - COMMIT_ID=$(consul kv get "infra/$APP_NAME-$ENV_NAME/commit_id")
   build:
