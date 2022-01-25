@@ -18,7 +18,7 @@ let newmanRunFailed = false;
 let test_status = "SUCCESSFUL";
 let lb_dns_name;
 
-exports.handler = async function (event, context) {
+exports.handler = async function (event, context, callback) {
   console.log('event', event);
   const deploymentId = event.DeploymentId;
   const combinedRunner = event.Combined;
@@ -57,6 +57,10 @@ exports.handler = async function (event, context) {
       }// successful response
       }).promise();
       const environment = env_name.deploymentInfo.applicationName.split("-")[2];
+      const deploy_status = env_name.deploymentInfo.status;
+      if (deploy_status == "Failed") {
+        return callback(null);
+      }
       const lb_name = env_name.deploymentInfo.applicationName.replace(/^ecs-deploy/,`${process.env.APP_NAME}`);
       var elb_params = {
         Names: [
@@ -73,6 +77,7 @@ exports.handler = async function (event, context) {
           }// successful response
           }).promise();
       lb_dns_name = `${lb_data.LoadBalancers[0].DNSName}`;
+      lb_dns_name = lb_dns_name.concat(":4443");
       for (const each of postmanList) {
         if (each.collection.includes('.json')) {
           promises.push(downloadFileFromBucket(environment,each.collection));
@@ -285,8 +290,9 @@ async function updateRunner (deploymentId, combinedRunner, event, error) {
 
 function generateEnvVars () {
   const envVarsArray = [];
-  envVarsArray.push({ enabled: true, key: "host", value:`${lb_dns_name}:4443`,type:'string' });
-  const parsedVars = JSON.parse(process.env.TEST_ENV_VAR_OVERRIDES);
+  const hostname = JSON.parse(`{ "host":"${lb_dns_name}"}`);
+  const parsedEnvVars = JSON.parse(process.env.TEST_ENV_VAR_OVERRIDES);
+  const parsedVars = Object.assign(hostname,parsedEnvVars);
   if (Object.keys(parsedVars).length === 0) return envVarsArray;
   for (const [key, value] of Object.entries(parsedVars)) {
     console.log(`[Env Override] Setting ${key} as ${value}`);
