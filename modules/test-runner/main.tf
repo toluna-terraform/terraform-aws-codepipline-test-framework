@@ -127,3 +127,8 @@ resource "aws_iam_role_policy_attachment" "role-s3" {
     role       = "${aws_iam_role.test_framework.name}"
     policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
+
+resource "aws_iam_role_policy_attachment" "role-ec2" {
+    role       = "${aws_iam_role.test_framework.name}"
+    policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
+}
