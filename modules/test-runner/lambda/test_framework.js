@@ -7,7 +7,6 @@ const newman = require('newman');
 const AWS = require('aws-sdk');
 const path = require('path');
 const AdmZip = require("adm-zip");
-const codedeploy = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cb = new AWS.CodeBuild({apiVersion: '2016-10-06', region: 'us-east-1'});
@@ -273,7 +272,7 @@ async function updateRunner (deploymentId, combinedRunner, event, error) {
       status: error ? 'Failed' : 'Succeeded'
     };
     try {
-      const data = await codedeploy.putLifecycleEventHookExecutionStatus(params).promise();
+      const data = await cd.putLifecycleEventHookExecutionStatus(params).promise();
       console.log(data);
     } catch (err) {
       console.log(err, err.stack);
