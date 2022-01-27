@@ -248,7 +248,7 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
             export: `/tmp/${deploymentId}/report.xml`, 
             } 
         },
-      abortOnFailure: true,
+      abortOnFailure: false,
       insecure: true,
       envVar: generateEnvVars()
     },environment,deploymentId);
