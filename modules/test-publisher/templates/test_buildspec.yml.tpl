@@ -22,9 +22,9 @@ phases:
       - echo "publishing $ENV_NAME integration test reports"
       - URL="https://api.bitbucket.org/2.0/repositories/tolunaengineering/$APP_NAME/commit/$COMMIT_ID/statuses/build/"
       - curl --request POST --url $URL -u "$USER:$PASS" --header "Accept:application/json" --header "Content-Type:application/json" --data "{\"key\":\"$APP_NAME Integration tests\",\"state\":\"$TEST_STATUS\",\"description\":\"$DESCRIPTION\",\"url\":\"$REPORT_URL\"}"
-
+      
 reports:
-  integration-test-reports-$ENV_NAME:
+  $REPORT_GROUP:
     files:
       - 'report.xml'
     file-format: JunitXml    

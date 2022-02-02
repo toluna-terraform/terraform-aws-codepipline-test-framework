@@ -16,6 +16,7 @@ const tmpDir = process.env.TMP_DIR || os.tmpdir();
 let newmanRunFailed = false;
 let test_status = "SUCCESSFUL";
 let lb_dns_name;
+let report_group_arn;
 
 exports.handler = async function (event, context, callback) {
   console.log('event', event);
@@ -77,6 +78,26 @@ exports.handler = async function (event, context, callback) {
           }).promise();
       lb_dns_name = `${lb_data.LoadBalancers[0].DNSName}`;
       lb_dns_name = lb_dns_name.concat(":4443");
+      var listReportParams = {
+
+      };
+      let reportGroup = await cb.listReportGroups(listReportParams, function(err, data) {
+        if (err) 
+          { 
+            console.log(err, err.stack); // an error occurred
+          }
+          else {
+            console.log(data);
+          }// successful response
+      }).promise();
+      var report_group_arns = Object.values(reportGroup.reportGroups);
+      for (const [key,value] of Object.entries(report_group_arns)) {
+        if (value.endsWith(`${environment}-IntegrationTestReport`)) {
+          console.log(`Selected Report Group ARN::::${value}`);
+          report_group_arn = value;
+        }
+      }
+      //report_group_arns.forEach(item => console.log(item));
       for (const each of postmanList) {
         if (each.collection.includes('.json')) {
           promises.push(downloadFileFromBucket(environment,each.collection));
@@ -164,6 +185,11 @@ async function uploadReports (environment,deploymentId) {
         {
           name: 'DESCRIPTION',
           value: `Build ${test_status} for project ${process.env.APP_NAME}-${environment}`,
+          type: 'PLAINTEXT'
+        },
+        {
+          name: 'REPORT_GROUP',
+          value: `${report_group_arn}`,
           type: 'PLAINTEXT'
         },
         

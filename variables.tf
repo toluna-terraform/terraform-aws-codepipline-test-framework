@@ -6,6 +6,9 @@ variable "env_type" {
     type = string
 }
 
+variable "app_envs" {
+}
+
 variable "environment_variables_parameter_store" {
  type = map(string)
  default = {
