@@ -20,6 +20,7 @@ resource "aws_codebuild_report_group" "TestReport" {
   for_each = toset(var.app_envs)
   name = "${var.app_name}-${each.key}-TestReport"
   type = "TEST"
+  delete_reports = true
   export_config {
     type = "NO_EXPORT"
   }
@@ -29,6 +30,7 @@ resource "aws_codebuild_report_group" "CodeCoverageReport" {
   for_each = toset(var.app_envs)
   name = "${var.app_name}-${each.key}-CodeCoverageReport"
   type = "CODE_COVERAGE"
+  delete_reports = true
   export_config {
     type = "NO_EXPORT"
   }
@@ -38,6 +40,7 @@ resource "aws_codebuild_report_group" "IntegrationTestReport" {
   for_each = toset(var.app_envs)
   name = "${var.app_name}-${each.key}-IntegrationTestReport"
   type = "TEST"
+  delete_reports = true
   export_config {
     type = "NO_EXPORT"
   }
