@@ -31,9 +31,17 @@ locals {
 resource "aws_s3_bucket" "postman_bucket" {
   force_destroy = true
   bucket        = "${var.app_name}-${var.env_type}-postman-tests"
-  acl           = "private"
-  versioning {
-    enabled = true
+}
+
+resource "aws_s3_bucket_acl" "postman_bucket" {
+  bucket = aws_s3_bucket.postman_bucket.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_versioning" "postman_bucket" {
+  bucket = aws_s3_bucket.postman_bucket.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 
