@@ -6,6 +6,9 @@ module "test_reports" {
   s3_bucket                             = "${var.app_name}-${var.env_type}-postman-tests"
   privileged_mode                       = true
   environment_variables_parameter_store = var.environment_variables_parameter_store
+  depends_on = [
+    module.test_runner
+  ]
 }
 
 module "test_runner" {
