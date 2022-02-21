@@ -31,7 +31,7 @@ resource "aws_codebuild_project" "tests_reports" {
   source {
     type     = "NO_SOURCE"
     buildspec = templatefile("${path.module}/templates/test_buildspec.yml.tpl", 
-  { yo = "yoyo" })
+  {  app_name = var.app_name, env_type = var.env_type })
   }
 
     tags = tomap({
