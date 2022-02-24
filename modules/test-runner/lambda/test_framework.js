@@ -17,6 +17,7 @@ let newmanRunFailed = false;
 let test_status = "SUCCESSFUL";
 let lb_dns_name;
 let report_group_arn;
+let environment;
 
 exports.handler = async function (event, context, callback) {
   console.log('event', event);
@@ -56,12 +57,18 @@ exports.handler = async function (event, context, callback) {
         console.log(data);
       }// successful response
       }).promise();
-      const environment = env_name.deploymentInfo.applicationName.split("-")[2];
+      if (env_name.deploymentInfo.deploymentConfigName == 'CodeDeployDefault.ECSAllAtOnce'){
+        environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy.", "");
+      }
+      if (env_name.deploymentInfo.deploymentConfigName == 'CodeDeployDefault.LambdaAllAtOnce'){
+        environment = env_name.deploymentInfo.applicationName.split("-")[1];
+      }
       const deploy_status = env_name.deploymentInfo.status;
+
       if (deploy_status == "Failed") {
         return callback(null);
       }
-      const lb_name = env_name.deploymentInfo.applicationName.replace(/^ecs-deploy/,`${process.env.APP_NAME}`);
+      const lb_name = `${process.env.APP_NAME}-${environment}`
       var elb_params = {
         Names: [
           lb_name
