@@ -58,7 +58,7 @@ exports.handler = async function (event, context, callback) {
       }// successful response
       }).promise();
       if (env_name.deploymentInfo.deploymentConfigName == 'CodeDeployDefault.ECSAllAtOnce'){
-        environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy.", "");
+        environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
       }
       if (env_name.deploymentInfo.deploymentConfigName == 'CodeDeployDefault.LambdaAllAtOnce'){
         environment = env_name.deploymentInfo.applicationName.split("-")[1];
