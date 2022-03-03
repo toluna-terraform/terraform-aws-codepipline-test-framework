@@ -57,12 +57,12 @@ exports.handler = async function (event, context, callback) {
         console.log(data);
       }// successful response
       }).promise();
-      if (env_name.deploymentInfo.deploymentConfigName == 'CodeDeployDefault.ECSAllAtOnce'){
+      if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')){
         environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
-      }
-      if (env_name.deploymentInfo.deploymentConfigName == 'CodeDeployDefault.LambdaAllAtOnce'){
+      };
+      if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')){
         environment = env_name.deploymentInfo.applicationName.split("-")[1];
-      }
+      };
       const deploy_status = env_name.deploymentInfo.status;
 
       if (deploy_status == "Failed") {
