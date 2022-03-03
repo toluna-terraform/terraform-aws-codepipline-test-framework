@@ -144,6 +144,7 @@ exports.handler = async function (event, context, callback) {
 };
 
 async function uploadReports (environment,deploymentId) {
+    let bucket_env_name=environment.split("-")[0];
     const zip = new AdmZip();
     const outputFile = `/tmp/${deploymentId}.zip`;
     zip.addLocalFolder(`/tmp/${deploymentId}`);
@@ -151,7 +152,7 @@ async function uploadReports (environment,deploymentId) {
     const fileContent = filesys.readFileSync(outputFile);
     const params = {
         Bucket: process.env.S3_BUCKET,
-        Key: `reports/${environment}/${deploymentId}.zip`, // File name you want to save as in S3
+        Key: `reports/${bucket_env_name}/${deploymentId}.zip`, // File name you want to save as in S3
         Body: fileContent
     };
 
@@ -213,11 +214,11 @@ async function uploadReports (environment,deploymentId) {
 }
 
 async function downloadFileFromBucket (env_name,key) {
-  
+  let bucket_env_name=env_name.split("-")[0];
   // Stripping relative path off of key.
   key = path.basename(key);
   const filename = `${tmpDir}${sep}${key}`;
-  key = `${env_name}/${key}`;
+  key = `${bucket_env_name}/${key}`;
   console.log(`started download for ${key} from s3 bucket`);
 
   let data;
