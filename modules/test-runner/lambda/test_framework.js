@@ -59,6 +59,8 @@ exports.handler = async function (event, context, callback) {
       }).promise();
       if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')){
         environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+        environment = environment.replace("-green", "");
+        environment = environment.replace("-blue", "");
       };
       if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')){
         environment = env_name.deploymentInfo.applicationName.split("-")[1];
