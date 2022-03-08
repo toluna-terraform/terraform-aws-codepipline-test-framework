@@ -18,6 +18,7 @@ let test_status = "SUCCESSFUL";
 let lb_dns_name;
 let report_group_arn;
 let environment;
+let lb_env_name;
 
 exports.handler = async function (event, context, callback) {
   console.log('event', event);
@@ -58,6 +59,7 @@ exports.handler = async function (event, context, callback) {
       }// successful response
       }).promise();
       if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')){
+        lb_env_name = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
         environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
         environment = environment.replace("-green", "");
         environment = environment.replace("-blue", "");
@@ -70,7 +72,7 @@ exports.handler = async function (event, context, callback) {
       if (deploy_status == "Failed") {
         return callback(null);
       }
-      const lb_name = `${process.env.APP_NAME}-${environment}`
+      const lb_name = `${process.env.APP_NAME}-${lb_env_name}`
       var elb_params = {
         Names: [
           lb_name
