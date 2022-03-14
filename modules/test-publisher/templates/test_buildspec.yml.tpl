@@ -17,12 +17,11 @@ phases:
         - export CONSUL_HTTP_ADDR=https://consul-cluster-test.consul.$CONSUL_PROJECT_ID.aws.hashicorp.cloud
         - REPORT_URL="https://console.aws.amazon.com/codesuite/codebuild/testReports/reportGroups/$APP_NAME-$ENV_NAME-IntegrationTestReport"
         - COMMIT_ID=$(consul kv get "infra/$APP_NAME-$ENV_NAME/commit_id")
-        - export BB_TOKEN=$(echo "$BB_USER:$BB_PASS" | base64)
   build:
     commands:
       - echo "publishing $ENV_NAME integration test reports"
       - URL="https://api.bitbucket.org/2.0/repositories/tolunaengineering/$APP_NAME/commit/$COMMIT_ID/statuses/build/"
-      - curl --request POST --url $URL --header "Authorization:Basic $BB_TOKEN" --header "Accept:application/json" --header "Content-Type:application/json" --data "{\"key\":\"$APP_NAME Integration tests\",\"state\":\"$TEST_STATUS\",\"description\":\"$DESCRIPTION\",\"url\":\"$REPORT_URL\"}"
+      - curl --request POST --url $URL --header "Accept:application/json" --header "Content-Type:application/json" -u "$BB_USER:$BB_PASS" --data "{\"key\":\"$APP_NAME Integration tests\",\"state\":\"$TEST_STATUS\",\"description\":\"$DESCRIPTION\",\"url\":\"$REPORT_URL\"}"
       
 reports:
   $REPORT_GROUP:
