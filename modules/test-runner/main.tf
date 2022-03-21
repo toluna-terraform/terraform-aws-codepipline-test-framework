@@ -82,7 +82,7 @@ resource "aws_lambda_function" "test_framework" {
 
 # IAM
 resource "aws_iam_role" "test_framework" {
-  name = "test_framework"
+  name = "${var.app_name}_${var.env_type}_test_framework"
 
   assume_role_policy = <<POLICY
 {
