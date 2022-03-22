@@ -82,8 +82,8 @@ No outputs.
 
 ## Tests
 ### Pre Requisites 
-\*go 1.17 and above
-\*terratest_log_parser
+* go 1.17 and above
+* terratest_log_parser
 
 ```
 # This example assumes a linux 64bit machine
@@ -96,13 +96,10 @@ sudo mv terratest_log_parser /usr/local/bin
 ```
 
 ### Steps to run
-\*under tests folder run the following command
-
-\*go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
-
-\*go test -v -timeout 30m runner_test.go| tee test_output.log                       
-
-\*terratest_log_parser --testlog test_output.log --outputdir test_output
+* under tests folder run the following command
+* go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
+* go test -v -timeout 30m runner_test.go| tee test_output.log                       
+* terratest_log_parser --testlog test_output.log --outputdir test_output
 
 ### References
 https://github.com/gruntwork-io/terratest/tree/dae956eb39e91dfb00f3ba85060a6dbf58c6782b
