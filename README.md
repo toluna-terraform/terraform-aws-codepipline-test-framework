@@ -16,17 +16,11 @@ The following resources will be created:
 
 ## Usage
 ```hcl
-module "test_framework" {
-  source                = "toluna-terraform/codepipeline-test-framework"
-  app_name = local.app_name
-  env_type = local.env_vars.env_type
-  postman_collections = [
-  {
-    collection = "chorus.postman_collection.json"
-    environment = "postman_environment.json"
-  }
-  ]
-}
+module "test_runner" {
+  source = "./modules/test-runner"
+  app_name = var.app_name
+  env_type = var.env_type
+  postman_collections = var.postman_collections
 }
 ```
 
@@ -86,3 +80,28 @@ No inputs.
 ## Outputs
 No outputs.
 
+## Tests
+### Pre Requisites 
+go 1.17 and abouve
+terratest_log_parser:
+```
+# This example assumes a linux 64bit machine
+# Use curl to download the binary
+curl --location --silent --fail --show-error -o terratest_log_parser https://github.com/gruntwork-io/terratest/releases/download/v0.13.13/terratest_log_parser_linux_amd64
+# Make the downloaded binary executable
+chmod +x terratest_log_parser
+# Finally, we place the downloaded binary to a place in the PATH
+sudo mv terratest_log_parser /usr/local/bin
+```
+
+### Steps to run
+under tests folder run the following command
+go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
+go test -v -timeout 30m runner_test.go| tee test_output.log                       
+terratest_log_parser --testlog test_output.log --outputdir test_output
+
+### References
+https://github.com/gruntwork-io/terratest/tree/dae956eb39e91dfb00f3ba85060a6dbf58c6782b
+https://terratest.gruntwork.io/docs/testing-best-practices
+https://terratest.gruntwork.io/docs/getting-started/quick-start/
+https://terratest.gruntwork.io/docs/testing-best-practices/debugging-interleaved-test-output/#installing-the-utility-binaries
