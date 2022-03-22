@@ -30,7 +30,7 @@ locals {
 
 resource "aws_s3_bucket" "postman_bucket" {
   force_destroy = true
-  bucket        = "${var.app_name}-${var.env_type}-postman-tests"
+  bucket        = "test-poc-postman-tests"
 }
 
 resource "aws_s3_bucket_acl" "postman_bucket" {
