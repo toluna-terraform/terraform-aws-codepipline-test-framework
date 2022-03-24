@@ -34,3 +34,5 @@ tests/go.mod
 tests/go.sum
 tests/unit-tests.xml
 tests/report.html
+tests/junit.xslt
+tests/testsigma-report.html
