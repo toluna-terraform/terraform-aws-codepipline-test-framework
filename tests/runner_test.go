@@ -13,6 +13,7 @@ import (
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
 var expectedEnvType = fmt.Sprintf("terratest-env-type-%s", random.UniqueId())
 var expectedAppEnvs = fmt.Sprintf("terratest-app-envs-%s", random.UniqueId())
+var expectedFuncName = fmt.Sprintf("%s-test-framework", "my_app-non-prod")
 
 func configureTerraformOptions(t *testing.T) *terraform.Options {
 
@@ -39,33 +40,34 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 }
 
 // An example of how to test the Terraform module in examples/terraform-aws-ecs-example using Terratest.
-func TestTerraformTestFramework(t *testing.T) {
-	t.Parallel()
-	for _, testFuncs := range []struct {
-		name  string
-		tfunc func(*testing.T)
-	}{
-		{"Terraform Init", testSetup},
-		{"Bucket Exists", testBucketExists},
-		{"Test AssertFail", testAssertFail},
-		{"Clean up", testCleanUp}} {
-		t.Run(testFuncs.name, testFuncs.tfunc)
-	}
-
-}
-
-func testSetup(t *testing.T) {
+func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
+	fmt.Println("Running Terraform init")
 }
 
-func testCleanUp(t *testing.T) {
+func TestBucketExists(t *testing.T) {
+	aws.AssertS3BucketExistsE(t, "us-east-1", "test-poc-postman-tests")
+	fmt.Println("Checkig for test bucket")
+}
+func TestTerraformTestLambda(t *testing.T) {
+	fmt.Println("invoking test-runner Lambda")
+	var invocationType aws.InvocationTypeOption = aws.InvocationTypeRequestResponse
+	input := &aws.LambdaOptions{
+		InvocationType: &invocationType,
+		Payload:        ExampleFunctionPayload{DeploymentId: "d-XXXXXXXXX", LifecycleEventHookExecutionId: "hi!"},
+	}
+	out, err := aws.InvokeFunctionWithParamsE(t, "us-east-1", expectedFuncName, input)
+
+	assert.Contains(t, string(out.Payload), "DeploymentDoesNotExistException")
+	assert.Equal(t, err.Error(), "Unhandled")
+}
+
+func TestCleanUp(t *testing.T) {
+	fmt.Println("Running Terraform Destroy")
 	terraform.Destroy(t, configureTerraformOptions(t))
 }
 
-func testBucketExists(t *testing.T) {
-	aws.AssertS3BucketExistsE(t, "us-east-1", "test-poc-postman-tests")
-}
-
-func testAssertFail(t *testing.T) {
-	assert.Equal(t, "1", "2")
+type ExampleFunctionPayload struct {
+	DeploymentId                  string
+	LifecycleEventHookExecutionId string
 }
