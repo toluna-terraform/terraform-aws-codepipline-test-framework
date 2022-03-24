@@ -83,23 +83,13 @@ No outputs.
 ## Tests
 ### Pre Requisites 
 * go 1.17 and above
-* terratest_log_parser
-
-```
-# This example assumes a linux 64bit machine
-# Use curl to download the binary
-curl --location --silent --fail --show-error -o terratest_log_parser https://github.com/gruntwork-io/terratest/releases/download/v0.13.13/terratest_log_parser_linux_amd64
-# Make the downloaded binary executable
-chmod +x terratest_log_parser
-# Finally, we place the downloaded binary to a place in the PATH
-sudo mv terratest_log_parser /usr/local/bin
-```
+* gotestsum https://github.com/gotestyourself/gotestsum/releases (wrapper for go junit tests)
 
 ### Steps to run
 * under tests folder run the following command
 * go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
-* go test -v -timeout 30m runner_test.go| tee test_output.log                       
-* terratest_log_parser --testlog test_output.log --outputdir test_output
+* go mod tidy (to pull all dependencies)
+* gotestsum --format testname --junitfile unit-tests.xml --junitfile-testsuite-name short --junitfile-testcase-classname short
 
 ### References
 https://github.com/gruntwork-io/terratest/tree/dae956eb39e91dfb00f3ba85060a6dbf58c6782b
