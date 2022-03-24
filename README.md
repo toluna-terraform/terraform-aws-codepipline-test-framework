@@ -89,7 +89,7 @@ No outputs.
 * under tests folder run the following command
 * go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
 * go mod tidy (to pull all dependencies)
-* gotestsum --format testname --junitfile unit-tests.xml --junitfile-testsuite-name short --junitfile-testcase-classname short
+* AWS_PROFILE=<account profile name> gotestsum --format testname --junitfile unit-tests.xml --junitfile-testsuite-name short --junitfile-testcase-classname short
 
 ### References
 https://github.com/gruntwork-io/terratest/tree/dae956eb39e91dfb00f3ba85060a6dbf58c6782b
