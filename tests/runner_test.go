@@ -52,7 +52,6 @@ func TestSetup(t *testing.T) {
 }
 
 func TestBucketExists(t *testing.T) {
-	WriteConverge("CheckBucketExists 2 1")
 	aws.AssertS3BucketExistsE(t, "us-east-1", "test-poc-postman-tests")
 	fmt.Println("Checkig for test bucket")
 }
@@ -79,8 +78,7 @@ type ExampleFunctionPayload struct {
 }
 
 func WriteStateJson(t *testing.T, c *terraform.Options) {
-	//jsonBlob := json.RawMessage(terraform.Show(t, configureTerraformOptions(t)))
-	//file, _ := json.MarshalIndent(jsonBlob, "", " ")
+	log.Println("Writing Generated resources for coverage verification.")
 	file := []byte(terraform.RunTerraformCommand(t, configureTerraformOptions(t), "state", "list"))
 	_ = ioutil.WriteFile("resource_list.txt", file, 0644)
 	resource_file, err := os.Open("resource_list.txt")

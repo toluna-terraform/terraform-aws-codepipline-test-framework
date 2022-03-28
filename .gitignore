@@ -36,3 +36,5 @@ tests/unit-tests.xml
 tests/report.html
 tests/junit.xslt
 tests/testsigma-report.html
+tests/resources.json
+tests/cover.out
