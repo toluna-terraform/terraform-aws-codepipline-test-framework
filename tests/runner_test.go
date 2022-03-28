@@ -1,11 +1,15 @@
 package test
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
+	"strings"
 	"testing"
 
+	"github.com/acarl005/stripansi"
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
@@ -41,7 +45,6 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 
 }
 
-// An example of how to test the Terraform module in examples/terraform-aws-ecs-example using Terratest.
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
 	fmt.Println("Running Terraform init")
@@ -49,6 +52,7 @@ func TestSetup(t *testing.T) {
 }
 
 func TestBucketExists(t *testing.T) {
+	WriteConverge("CheckBucketExists 2 1")
 	aws.AssertS3BucketExistsE(t, "us-east-1", "test-poc-postman-tests")
 	fmt.Println("Checkig for test bucket")
 }
@@ -60,7 +64,6 @@ func TestTerraformTestLambda(t *testing.T) {
 		Payload:        ExampleFunctionPayload{DeploymentId: "d-XXXXXXXXX", LifecycleEventHookExecutionId: "hi!"},
 	}
 	out, err := aws.InvokeFunctionWithParamsE(t, "us-east-1", expectedFuncName, input)
-
 	assert.Contains(t, string(out.Payload), "DeploymentDoesNotExistException")
 	assert.Equal(t, err.Error(), "Unhandled")
 }
@@ -76,7 +79,61 @@ type ExampleFunctionPayload struct {
 }
 
 func WriteStateJson(t *testing.T, c *terraform.Options) {
-	jsonBlob := json.RawMessage(terraform.Show(t, configureTerraformOptions(t)))
-	file, _ := json.MarshalIndent(jsonBlob, "", " ")
-	_ = ioutil.WriteFile("test.json", file, 0644)
+	//jsonBlob := json.RawMessage(terraform.Show(t, configureTerraformOptions(t)))
+	//file, _ := json.MarshalIndent(jsonBlob, "", " ")
+	file := []byte(terraform.RunTerraformCommand(t, configureTerraformOptions(t), "state", "list"))
+	_ = ioutil.WriteFile("resource_list.txt", file, 0644)
+	resource_file, err := os.Open("resource_list.txt")
+	if err != nil {
+		log.Fatalf("failed opening file: %s", err)
+	}
+	scanner := bufio.NewScanner(resource_file)
+	scanner.Split(bufio.ScanLines)
+	var txtlines []string
+
+	for scanner.Scan() {
+		txtlines = append(txtlines, scanner.Text())
+	}
+
+	resource_file.Close()
+
+	for _, eachline := range txtlines {
+		if !strings.Contains(eachline, "data.") {
+			if err != nil {
+				log.Fatal(err)
+			}
+			resource := terraform.RunTerraformCommand(t, configureTerraformOptions(t), "state", "show", eachline)
+			cleanMsg := stripansi.Strip(resource)
+			f, err := os.OpenFile("resources.hcl",
+				os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Println(err)
+			}
+			defer f.Close()
+			if _, err := f.WriteString(cleanMsg + "\n"); err != nil {
+				log.Println(err)
+			}
+		}
+
+	}
+	defer os.Remove("resource_list.txt")
+	defer os.Remove("resources.hcl")
+	terraform.HCLFileToJSONFile("resources.hcl", "resources.json")
+
+}
+
+func WriteConverge(s string) {
+	if _, err := os.Stat("reports"); os.IsNotExist(err) {
+		os.MkdirAll("reports", 0700) // Create your file
+	}
+	f, err := os.OpenFile("reports/cover.out",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+	line := fmt.Sprintf("%s\n", s)
+	if _, err := f.WriteString(line); err != nil {
+		log.Println(err)
+	}
 }
