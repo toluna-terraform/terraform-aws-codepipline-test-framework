@@ -1,0 +1,1329 @@
+{
+ "format_version": "1.0",
+ "terraform_version": "1.1.7",
+ "values": {
+  "root_module": {
+   "child_modules": [
+    {
+     "resources": [
+      {
+       "address": "module.test_framework.aws_codebuild_report_group.CodeCoverageReport[\"my_env\"]",
+       "mode": "managed",
+       "type": "aws_codebuild_report_group",
+       "name": "CodeCoverageReport",
+       "index": "my_env",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "arn": "arn:aws:codebuild:us-east-1:603106382807:report-group/my_app-my_env-CodeCoverageReport",
+        "created": "2022-03-28T04:29:22Z",
+        "delete_reports": true,
+        "export_config": [
+         {
+          "s3_destination": [],
+          "type": "NO_EXPORT"
+         }
+        ],
+        "id": "arn:aws:codebuild:us-east-1:603106382807:report-group/my_app-my_env-CodeCoverageReport",
+        "name": "my_app-my_env-CodeCoverageReport",
+        "tags": null,
+        "tags_all": {},
+        "type": "CODE_COVERAGE"
+       },
+       "sensitive_values": {
+        "export_config": [
+         {
+          "s3_destination": []
+         }
+        ],
+        "tags_all": {}
+       }
+      },
+      {
+       "address": "module.test_framework.aws_codebuild_report_group.IntegrationTestReport[\"my_env\"]",
+       "mode": "managed",
+       "type": "aws_codebuild_report_group",
+       "name": "IntegrationTestReport",
+       "index": "my_env",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "arn": "arn:aws:codebuild:us-east-1:603106382807:report-group/my_app-my_env-IntegrationTestReport",
+        "created": "2022-03-28T04:29:22Z",
+        "delete_reports": true,
+        "export_config": [
+         {
+          "s3_destination": [],
+          "type": "NO_EXPORT"
+         }
+        ],
+        "id": "arn:aws:codebuild:us-east-1:603106382807:report-group/my_app-my_env-IntegrationTestReport",
+        "name": "my_app-my_env-IntegrationTestReport",
+        "tags": null,
+        "tags_all": {},
+        "type": "TEST"
+       },
+       "sensitive_values": {
+        "export_config": [
+         {
+          "s3_destination": []
+         }
+        ],
+        "tags_all": {}
+       }
+      },
+      {
+       "address": "module.test_framework.aws_codebuild_report_group.TestReport[\"my_env\"]",
+       "mode": "managed",
+       "type": "aws_codebuild_report_group",
+       "name": "TestReport",
+       "index": "my_env",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "arn": "arn:aws:codebuild:us-east-1:603106382807:report-group/my_app-my_env-TestReport",
+        "created": "2022-03-28T04:29:22Z",
+        "delete_reports": true,
+        "export_config": [
+         {
+          "s3_destination": [],
+          "type": "NO_EXPORT"
+         }
+        ],
+        "id": "arn:aws:codebuild:us-east-1:603106382807:report-group/my_app-my_env-TestReport",
+        "name": "my_app-my_env-TestReport",
+        "tags": null,
+        "tags_all": {},
+        "type": "TEST"
+       },
+       "sensitive_values": {
+        "export_config": [
+         {
+          "s3_destination": []
+         }
+        ],
+        "tags_all": {}
+       }
+      },
+      {
+       "address": "module.test_framework.data.aws_caller_identity.current",
+       "mode": "data",
+       "type": "aws_caller_identity",
+       "name": "current",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "account_id": "603106382807",
+        "arn": "arn:aws:sts::603106382807:assumed-role/AWSReservedSSO_AdministratorAccess_1b5c4e4773d6c344/Eli.Meitner@toluna.com",
+        "id": "603106382807",
+        "user_id": "AROAYY27RCPL3E4AHB62L:Eli.Meitner@toluna.com"
+       },
+       "sensitive_values": {}
+      },
+      {
+       "address": "module.test_framework.data.aws_region.current",
+       "mode": "data",
+       "type": "aws_region",
+       "name": "current",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "description": "US East (N. Virginia)",
+        "endpoint": "ec2.us-east-1.amazonaws.com",
+        "id": "us-east-1",
+        "name": "us-east-1"
+       },
+       "sensitive_values": {}
+      },
+      {
+       "address": "module.test_framework.data.aws_ssm_parameter.ado_password",
+       "mode": "data",
+       "type": "aws_ssm_parameter",
+       "name": "ado_password",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "arn": "arn:aws:ssm:us-east-1:603106382807:parameter/app/ado_password",
+        "id": "/app/ado_password",
+        "name": "/app/ado_password",
+        "type": "SecureString",
+        "value": "rzcumgvugbe7djdedr5wladrgzhyf5lemany23eoilsstgurnf2a",
+        "version": 1,
+        "with_decryption": true
+       },
+       "sensitive_values": {}
+      },
+      {
+       "address": "module.test_framework.data.aws_ssm_parameter.ado_user",
+       "mode": "data",
+       "type": "aws_ssm_parameter",
+       "name": "ado_user",
+       "provider_name": "registry.terraform.io/hashicorp/aws",
+       "schema_version": 0,
+       "values": {
+        "arn": "arn:aws:ssm:us-east-1:603106382807:parameter/app/ado_user",
+        "id": "/app/ado_user",
+        "name": "/app/ado_user",
+        "type": "SecureString",
+        "value": "JenkinsArtifact",
+        "version": 1,
+        "with_decryption": true
+       },
+       "sensitive_values": {}
+      }
+     ],
+     "address": "module.test_framework",
+     "child_modules": [
+      {
+       "resources": [
+        {
+         "address": "module.test_framework.module.test_reports.aws_codebuild_project.tests_reports",
+         "mode": "managed",
+         "type": "aws_codebuild_project",
+         "name": "tests_reports",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "arn": "arn:aws:codebuild:us-east-1:603106382807:project/codebuild-publish-reports-my_app-non-prod",
+          "artifacts": [
+           {
+            "artifact_identifier": "",
+            "bucket_owner_access": "",
+            "encryption_disabled": false,
+            "location": "",
+            "name": "",
+            "namespace_type": "",
+            "override_artifact_name": false,
+            "packaging": "",
+            "path": "",
+            "type": "NO_ARTIFACTS"
+           }
+          ],
+          "badge_enabled": false,
+          "badge_url": "",
+          "build_batch_config": [],
+          "build_timeout": 120,
+          "cache": [
+           {
+            "location": "",
+            "modes": [],
+            "type": "NO_CACHE"
+           }
+          ],
+          "concurrent_build_limit": 0,
+          "description": "Build spec for codebuild-publish-reports-my_app-non-prod",
+          "encryption_key": "arn:aws:kms:us-east-1:603106382807:alias/aws/s3",
+          "environment": [
+           {
+            "certificate": "",
+            "compute_type": "BUILD_GENERAL1_SMALL",
+            "environment_variable": [],
+            "image": "aws/codebuild/amazonlinux2-x86_64-standard:3.0",
+            "image_pull_credentials_type": "CODEBUILD",
+            "privileged_mode": true,
+            "registry_credential": [],
+            "type": "LINUX_CONTAINER"
+           }
+          ],
+          "file_system_locations": [],
+          "id": "arn:aws:codebuild:us-east-1:603106382807:project/codebuild-publish-reports-my_app-non-prod",
+          "logs_config": [
+           {
+            "cloudwatch_logs": [
+             {
+              "group_name": "/codebuild-publish-reports-my_app-non-prod/log-group",
+              "status": "ENABLED",
+              "stream_name": "/codebuild-publish-reports-my_app-non-prod/stream"
+             }
+            ],
+            "s3_logs": [
+             {
+              "bucket_owner_access": "",
+              "encryption_disabled": false,
+              "location": "",
+              "status": "DISABLED"
+             }
+            ]
+           }
+          ],
+          "name": "codebuild-publish-reports-my_app-non-prod",
+          "project_visibility": "PRIVATE",
+          "public_project_alias": "",
+          "queued_timeout": 480,
+          "resource_access_role": "",
+          "secondary_artifacts": [],
+          "secondary_source_version": [],
+          "secondary_sources": [],
+          "service_role": "arn:aws:iam::603106382807:role/role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod",
+          "source": [
+           {
+            "auth": [],
+            "build_status_config": [],
+            "buildspec": "version: 0.2\n\nenv:\n  parameter-store:\n    BB_USER: \"/app/bb_user\"  \n    BB_PASS: \"/app/bb_app_pass\"\n    CONSUL_PROJECT_ID: \"/infra/my_app-non-prod/consul_project_id\"\n    CONSUL_HTTP_TOKEN: \"/infra/my_app-non-prod/consul_http_token\"\n\nphases:\n  pre_build:\n      commands:\n        - yum install -y yum-utils\n        - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo\n        - yum -y install terraform\n        - yum install -y yum-utils consul\n        - export CONSUL_HTTP_ADDR=https://consul-cluster-test.consul.$CONSUL_PROJECT_ID.aws.hashicorp.cloud\n        - REPORT_URL=\"https://console.aws.amazon.com/codesuite/codebuild/testReports/reportGroups/$APP_NAME-$ENV_NAME-IntegrationTestReport\"\n        - COMMIT_ID=$(consul kv get \"infra/$APP_NAME-$ENV_NAME/commit_id\")\n  build:\n    commands:\n      - echo \"publishing $ENV_NAME integration test reports\"\n      - URL=\"https://api.bitbucket.org/2.0/repositories/tolunaengineering/$APP_NAME/commit/$COMMIT_ID/statuses/build/\"\n      - curl --request POST --url $URL --header \"Accept:application/json\" --header \"Content-Type:application/json\" -u \"$BB_USER:$BB_PASS\" --data \"{\\\"key\\\":\\\"$APP_NAME Integration tests\\\",\\\"state\\\":\\\"$TEST_STATUS\\\",\\\"description\\\":\\\"$DESCRIPTION\\\",\\\"url\\\":\\\"$REPORT_URL\\\"}\"\n      \nreports:\n  $REPORT_GROUP:\n    files:\n      - 'report.xml'\n    file-format: JunitXml    ",
+            "git_clone_depth": 0,
+            "git_submodules_config": [],
+            "insecure_ssl": false,
+            "location": "",
+            "report_build_status": false,
+            "type": "NO_SOURCE"
+           }
+          ],
+          "source_version": "",
+          "tags": {
+           "Name": "codebuild-codebuild-publish-reports-my_app-non-prod",
+           "created_by": "terraform",
+           "environment": "my_app-non-prod"
+          },
+          "tags_all": {
+           "Name": "codebuild-codebuild-publish-reports-my_app-non-prod",
+           "created_by": "terraform",
+           "environment": "my_app-non-prod"
+          },
+          "vpc_config": []
+         },
+         "sensitive_values": {
+          "artifacts": [
+           {}
+          ],
+          "build_batch_config": [],
+          "cache": [
+           {
+            "modes": []
+           }
+          ],
+          "environment": [
+           {
+            "environment_variable": [],
+            "registry_credential": []
+           }
+          ],
+          "file_system_locations": [],
+          "logs_config": [
+           {
+            "cloudwatch_logs": [
+             {}
+            ],
+            "s3_logs": [
+             {}
+            ]
+           }
+          ],
+          "secondary_artifacts": [],
+          "secondary_source_version": [],
+          "secondary_sources": [],
+          "source": [
+           {
+            "auth": [],
+            "build_status_config": [],
+            "git_submodules_config": []
+           }
+          ],
+          "tags": {},
+          "tags_all": {},
+          "vpc_config": []
+         },
+         "depends_on": [
+          "module.test_framework.module.test_reports.aws_iam_role.codebuild_role",
+          "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_assume_role_policy",
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-cloudwatch",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codebuild",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codedeploy",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-ec2",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-execution",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-ssm",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-s3",
+          "module.test_framework.module.test_runner.aws_lambda_function.test_framework",
+          "module.test_framework.module.test_runner.aws_lambda_layer_version.lambda_layer",
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_acl.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_policy.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_public_access_block.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_versioning.postman_bucket",
+          "module.test_framework.module.test_runner.data.aws_caller_identity.current",
+          "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_reports.aws_iam_role.codebuild_role",
+         "mode": "managed",
+         "type": "aws_iam_role",
+         "name": "codebuild_role",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "arn": "arn:aws:iam::603106382807:role/role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod",
+          "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"codebuild.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}",
+          "create_date": "2022-03-28T04:29:44Z",
+          "description": "",
+          "force_detach_policies": false,
+          "id": "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod",
+          "inline_policy": [
+           {
+            "name": "",
+            "policy": ""
+           }
+          ],
+          "managed_policy_arns": [],
+          "max_session_duration": 3600,
+          "name": "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod",
+          "name_prefix": "",
+          "path": "/",
+          "permissions_boundary": null,
+          "tags": null,
+          "tags_all": {},
+          "unique_id": "AROAYY27RCPLR35GSMKZU"
+         },
+         "sensitive_values": {
+          "inline_policy": [
+           {}
+          ],
+          "managed_policy_arns": [],
+          "tags_all": {}
+         },
+         "depends_on": [
+          "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_assume_role_policy",
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-cloudwatch",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codebuild",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codedeploy",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-ec2",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-execution",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-ssm",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-s3",
+          "module.test_framework.module.test_runner.aws_lambda_function.test_framework",
+          "module.test_framework.module.test_runner.aws_lambda_layer_version.lambda_layer",
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_acl.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_policy.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_public_access_block.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_versioning.postman_bucket",
+          "module.test_framework.module.test_runner.data.aws_caller_identity.current",
+          "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_reports.aws_iam_role_policy.codebuild_policy",
+         "mode": "managed",
+         "type": "aws_iam_role_policy",
+         "name": "codebuild_policy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod:policy-codebuild-publish-reports-my_app-non-prod",
+          "name": "policy-codebuild-publish-reports-my_app-non-prod",
+          "name_prefix": null,
+          "policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"ssm:*\",\n        \"s3:*\",\n        \"logs:*\",\n        \"codebuild:*\"\n      ],\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+          "role": "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_reports.aws_iam_role.codebuild_role",
+          "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_assume_role_policy",
+          "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_role_policy",
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-cloudwatch",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codebuild",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codedeploy",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-ec2",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-execution",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-ssm",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-s3",
+          "module.test_framework.module.test_runner.aws_lambda_function.test_framework",
+          "module.test_framework.module.test_runner.aws_lambda_layer_version.lambda_layer",
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_acl.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_policy.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_public_access_block.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_versioning.postman_bucket",
+          "module.test_framework.module.test_runner.data.aws_caller_identity.current",
+          "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_reports.aws_iam_role_policy.codepipeline_policy",
+         "mode": "managed",
+         "type": "aws_iam_role_policy",
+         "name": "codepipeline_policy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod:policy-codebuild-publish-reports-my_app-non-prod",
+          "name": "policy-codebuild-publish-reports-my_app-non-prod",
+          "name_prefix": null,
+          "policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"ssm:*\",\n        \"s3:*\",\n        \"logs:*\",\n        \"codebuild:*\"\n      ],\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+          "role": "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_reports.aws_iam_role.codebuild_role",
+          "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_assume_role_policy",
+          "module.test_framework.module.test_reports.data.aws_iam_policy_document.codepipeline_role_policy",
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-cloudwatch",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codebuild",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codedeploy",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-ec2",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-execution",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-ssm",
+          "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-s3",
+          "module.test_framework.module.test_runner.aws_lambda_function.test_framework",
+          "module.test_framework.module.test_runner.aws_lambda_layer_version.lambda_layer",
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_acl.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_policy.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_public_access_block.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_versioning.postman_bucket",
+          "module.test_framework.module.test_runner.data.aws_caller_identity.current",
+          "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_assume_role_policy",
+         "mode": "data",
+         "type": "aws_iam_policy_document",
+         "name": "codebuild_assume_role_policy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "442947395",
+          "json": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": \"codebuild.amazonaws.com\"\n      }\n    }\n  ]\n}",
+          "override_json": null,
+          "override_policy_documents": null,
+          "policy_id": null,
+          "source_json": null,
+          "source_policy_documents": null,
+          "statement": [
+           {
+            "actions": [
+             "sts:AssumeRole"
+            ],
+            "condition": [],
+            "effect": "Allow",
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [
+             {
+              "identifiers": [
+               "codebuild.amazonaws.com"
+              ],
+              "type": "Service"
+             }
+            ],
+            "resources": [],
+            "sid": ""
+           }
+          ],
+          "version": "2012-10-17"
+         },
+         "sensitive_values": {
+          "statement": [
+           {
+            "actions": [
+             false
+            ],
+            "condition": [],
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [
+             {
+              "identifiers": [
+               false
+              ]
+             }
+            ],
+            "resources": []
+           }
+          ]
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_reports.data.aws_iam_policy_document.codebuild_role_policy",
+         "mode": "data",
+         "type": "aws_iam_policy_document",
+         "name": "codebuild_role_policy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "881239538",
+          "json": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"ssm:*\",\n        \"s3:*\",\n        \"logs:*\",\n        \"codebuild:*\"\n      ],\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+          "override_json": null,
+          "override_policy_documents": null,
+          "policy_id": null,
+          "source_json": null,
+          "source_policy_documents": null,
+          "statement": [
+           {
+            "actions": [
+             "codebuild:*",
+             "logs:*",
+             "s3:*",
+             "ssm:*"
+            ],
+            "condition": [],
+            "effect": "Allow",
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [],
+            "resources": [
+             "*"
+            ],
+            "sid": ""
+           }
+          ],
+          "version": "2012-10-17"
+         },
+         "sensitive_values": {
+          "statement": [
+           {
+            "actions": [
+             false,
+             false,
+             false,
+             false
+            ],
+            "condition": [],
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [],
+            "resources": [
+             false
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_reports.data.aws_iam_policy_document.codepipeline_assume_role_policy",
+         "mode": "data",
+         "type": "aws_iam_policy_document",
+         "name": "codepipeline_assume_role_policy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "1969390398",
+          "json": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": [\n          \"codepipeline.amazonaws.com\",\n          \"codedeploy.amazonaws.com\"\n        ]\n      }\n    }\n  ]\n}",
+          "override_json": null,
+          "override_policy_documents": null,
+          "policy_id": null,
+          "source_json": null,
+          "source_policy_documents": null,
+          "statement": [
+           {
+            "actions": [
+             "sts:AssumeRole"
+            ],
+            "condition": [],
+            "effect": "Allow",
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [
+             {
+              "identifiers": [
+               "codedeploy.amazonaws.com",
+               "codepipeline.amazonaws.com"
+              ],
+              "type": "Service"
+             }
+            ],
+            "resources": [],
+            "sid": ""
+           }
+          ],
+          "version": "2012-10-17"
+         },
+         "sensitive_values": {
+          "statement": [
+           {
+            "actions": [
+             false
+            ],
+            "condition": [],
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [
+             {
+              "identifiers": [
+               false,
+               false
+              ]
+             }
+            ],
+            "resources": []
+           }
+          ]
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_reports.data.aws_iam_policy_document.codepipeline_role_policy",
+         "mode": "data",
+         "type": "aws_iam_policy_document",
+         "name": "codepipeline_role_policy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "4158024665",
+          "json": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"ssm:*\",\n        \"s3:*\",\n        \"logs:PutLogEvents\",\n        \"logs:CreateLogStream\",\n        \"logs:CreateLogGroup\",\n        \"codebuild:*\"\n      ],\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+          "override_json": null,
+          "override_policy_documents": null,
+          "policy_id": null,
+          "source_json": null,
+          "source_policy_documents": null,
+          "statement": [
+           {
+            "actions": [
+             "codebuild:*",
+             "logs:CreateLogGroup",
+             "logs:CreateLogStream",
+             "logs:PutLogEvents",
+             "s3:*",
+             "ssm:*"
+            ],
+            "condition": [],
+            "effect": "Allow",
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [],
+            "resources": [
+             "*"
+            ],
+            "sid": ""
+           }
+          ],
+          "version": "2012-10-17"
+         },
+         "sensitive_values": {
+          "statement": [
+           {
+            "actions": [
+             false,
+             false,
+             false,
+             false,
+             false,
+             false
+            ],
+            "condition": [],
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [],
+            "resources": [
+             false
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_reports.data.aws_s3_bucket.codepipeline_bucket",
+         "mode": "data",
+         "type": "aws_s3_bucket",
+         "name": "codepipeline_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "arn": "arn:aws:s3:::test-poc-postman-tests",
+          "bucket": "test-poc-postman-tests",
+          "bucket_domain_name": "test-poc-postman-tests.s3.amazonaws.com",
+          "bucket_regional_domain_name": "test-poc-postman-tests.s3.amazonaws.com",
+          "hosted_zone_id": "Z3AQBSTGFYJSTF",
+          "id": "test-poc-postman-tests",
+          "region": "us-east-1",
+          "website_domain": null,
+          "website_endpoint": null
+         },
+         "sensitive_values": {}
+        },
+        {
+         "address": "module.test_framework.module.test_reports.data.aws_ssm_parameter.codepipeline_connection_arn",
+         "mode": "data",
+         "type": "aws_ssm_parameter",
+         "name": "codepipeline_connection_arn",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "arn": "arn:aws:ssm:us-east-1:603106382807:parameter/infra/codepipeline/connection_arn",
+          "id": "/infra/codepipeline/connection_arn",
+          "name": "/infra/codepipeline/connection_arn",
+          "type": "SecureString",
+          "value": "arn:aws:codestar-connections:us-east-1:603106382807:connection/3301f721-d600-4a93-b3dd-a62cd082f0d1",
+          "version": 1,
+          "with_decryption": true
+         },
+         "sensitive_values": {}
+        }
+       ],
+       "address": "module.test_framework.module.test_reports"
+      },
+      {
+       "resources": [
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+         "mode": "managed",
+         "type": "aws_iam_role",
+         "name": "test_framework",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "arn": "arn:aws:iam::603106382807:role/my_app_non-prod_test_framework",
+          "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"codedeploy.amazonaws.com\",\"s3.amazonaws.com\",\"codebuild.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}",
+          "create_date": "2022-03-28T04:29:23Z",
+          "description": "",
+          "force_detach_policies": false,
+          "id": "my_app_non-prod_test_framework",
+          "inline_policy": [
+           {
+            "name": "",
+            "policy": ""
+           }
+          ],
+          "managed_policy_arns": [],
+          "max_session_duration": 3600,
+          "name": "my_app_non-prod_test_framework",
+          "name_prefix": "",
+          "path": "/",
+          "permissions_boundary": null,
+          "tags": null,
+          "tags_all": {},
+          "unique_id": "AROAYY27RCPL4H4UV6POZ"
+         },
+         "sensitive_values": {
+          "inline_policy": [
+           {}
+          ],
+          "managed_policy_arns": [],
+          "tags_all": {}
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-cloudwatch",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-cloudwatch",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924793600000006",
+          "policy_arn": "arn:aws:iam::aws:policy/CloudWatchFullAccess",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codebuild",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-codebuild",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924790900000005",
+          "policy_arn": "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-codedeploy",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-codedeploy",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924779600000004",
+          "policy_arn": "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-ec2",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-ec2",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924357600000001",
+          "policy_arn": "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-execution",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-lambda-execution",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924528900000002",
+          "policy_arn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-lambda-ssm",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-lambda-ssm",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924806900000007",
+          "policy_arn": "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_iam_role_policy_attachment.role-s3",
+         "mode": "managed",
+         "type": "aws_iam_role_policy_attachment",
+         "name": "role-s3",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "my_app_non-prod_test_framework-20220328042924697600000003",
+          "policy_arn": "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+          "role": "my_app_non-prod_test_framework"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_lambda_function.test_framework",
+         "mode": "managed",
+         "type": "aws_lambda_function",
+         "name": "test_framework",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "architectures": [
+           "x86_64"
+          ],
+          "arn": "arn:aws:lambda:us-east-1:603106382807:function:my_app-non-prod-test-framework",
+          "code_signing_config_arn": "",
+          "dead_letter_config": [],
+          "description": "",
+          "environment": [
+           {
+            "variables": {
+             "ALB_WAIT_TIME": "10",
+             "APP_NAME": "my_app",
+             "ENV_TYPE": "non-prod",
+             "POSTMAN_COLLECTIONS": "[{\"collection\":\"my_app.postman_collection.json\",\"environment\":\"postman_environment.json\"}]",
+             "S3_BUCKET": "test-poc-postman-tests",
+             "TEST_ENV_VAR_OVERRIDES": "{}"
+            }
+           }
+          ],
+          "file_system_config": [],
+          "filename": "../../modules/test-runner/lambda/lambda.zip",
+          "function_name": "my_app-non-prod-test-framework",
+          "handler": "test_framework.handler",
+          "id": "my_app-non-prod-test-framework",
+          "image_config": [],
+          "image_uri": "",
+          "invoke_arn": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:603106382807:function:my_app-non-prod-test-framework/invocations",
+          "kms_key_arn": "",
+          "last_modified": "2022-03-28T04:29:36.118+0000",
+          "layers": [
+           "arn:aws:lambda:us-east-1:603106382807:layer:postman:107"
+          ],
+          "memory_size": 128,
+          "package_type": "Zip",
+          "publish": false,
+          "qualified_arn": "arn:aws:lambda:us-east-1:603106382807:function:my_app-non-prod-test-framework:$LATEST",
+          "reserved_concurrent_executions": -1,
+          "role": "arn:aws:iam::603106382807:role/my_app_non-prod_test_framework",
+          "runtime": "nodejs12.x",
+          "s3_bucket": null,
+          "s3_key": null,
+          "s3_object_version": null,
+          "signing_job_arn": "",
+          "signing_profile_version_arn": "",
+          "source_code_hash": "VGfxhE0qMi9AetElGMpekdNfRbAtBrOJ3qoxpevHc34=",
+          "source_code_size": 4120,
+          "tags": null,
+          "tags_all": {},
+          "timeout": 180,
+          "timeouts": null,
+          "tracing_config": [
+           {
+            "mode": "PassThrough"
+           }
+          ],
+          "version": "$LATEST",
+          "vpc_config": []
+         },
+         "sensitive_values": {
+          "architectures": [
+           false
+          ],
+          "dead_letter_config": [],
+          "environment": [
+           {
+            "variables": {}
+           }
+          ],
+          "file_system_config": [],
+          "image_config": [],
+          "layers": [
+           false
+          ],
+          "tags_all": {},
+          "tracing_config": [
+           {}
+          ],
+          "vpc_config": []
+         },
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+          "module.test_framework.module.test_runner.aws_lambda_layer_version.lambda_layer",
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_acl.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_policy.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_public_access_block.postman_bucket",
+          "module.test_framework.module.test_runner.aws_s3_bucket_versioning.postman_bucket",
+          "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_lambda_layer_version.lambda_layer",
+         "mode": "managed",
+         "type": "aws_lambda_layer_version",
+         "name": "lambda_layer",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "arn": "arn:aws:lambda:us-east-1:603106382807:layer:postman:107",
+          "compatible_architectures": null,
+          "compatible_runtimes": [
+           "nodejs12.x"
+          ],
+          "created_date": "2022-03-28T04:29:35.685+0000",
+          "description": "",
+          "filename": "../../modules/test-runner/layer/layer.zip",
+          "id": "arn:aws:lambda:us-east-1:603106382807:layer:postman:107",
+          "layer_arn": "arn:aws:lambda:us-east-1:603106382807:layer:postman",
+          "layer_name": "postman",
+          "license_info": "",
+          "s3_bucket": null,
+          "s3_key": null,
+          "s3_object_version": null,
+          "signing_job_arn": "",
+          "signing_profile_version_arn": "",
+          "skip_destroy": false,
+          "source_code_hash": "xD/NsuB3S+D0Pa1NWKXx1e4zwSPwLMKEleROWzWuwn0=",
+          "source_code_size": 28981351,
+          "version": "107"
+         },
+         "sensitive_values": {
+          "compatible_runtimes": [
+           false
+          ]
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+         "mode": "managed",
+         "type": "aws_s3_bucket",
+         "name": "postman_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "acceleration_status": "",
+          "acl": "private",
+          "arn": "arn:aws:s3:::test-poc-postman-tests",
+          "bucket": "test-poc-postman-tests",
+          "bucket_domain_name": "test-poc-postman-tests.s3.amazonaws.com",
+          "bucket_prefix": null,
+          "bucket_regional_domain_name": "test-poc-postman-tests.s3.amazonaws.com",
+          "cors_rule": [],
+          "force_destroy": true,
+          "grant": [],
+          "hosted_zone_id": "Z3AQBSTGFYJSTF",
+          "id": "test-poc-postman-tests",
+          "lifecycle_rule": [],
+          "logging": [],
+          "object_lock_configuration": [],
+          "object_lock_enabled": false,
+          "policy": "",
+          "region": "us-east-1",
+          "replication_configuration": [],
+          "request_payer": "BucketOwner",
+          "server_side_encryption_configuration": [],
+          "tags": null,
+          "tags_all": {},
+          "versioning": [
+           {
+            "enabled": false,
+            "mfa_delete": false
+           }
+          ],
+          "website": [],
+          "website_domain": null,
+          "website_endpoint": null
+         },
+         "sensitive_values": {
+          "cors_rule": [],
+          "grant": [],
+          "lifecycle_rule": [],
+          "logging": [],
+          "object_lock_configuration": [],
+          "replication_configuration": [],
+          "server_side_encryption_configuration": [],
+          "tags_all": {},
+          "versioning": [
+           {}
+          ],
+          "website": []
+         }
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_s3_bucket_acl.postman_bucket",
+         "mode": "managed",
+         "type": "aws_s3_bucket_acl",
+         "name": "postman_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "access_control_policy": [
+           {
+            "grant": [
+             {
+              "grantee": [
+               {
+                "display_name": "pg-2",
+                "email_address": "",
+                "id": "74c8da0d1d81dc929445775c12ccaac639727f9bebf5b0886e326e42747a789a",
+                "type": "CanonicalUser",
+                "uri": ""
+               }
+              ],
+              "permission": "FULL_CONTROL"
+             }
+            ],
+            "owner": [
+             {
+              "display_name": "pg-2",
+              "id": "74c8da0d1d81dc929445775c12ccaac639727f9bebf5b0886e326e42747a789a"
+             }
+            ]
+           }
+          ],
+          "acl": "private",
+          "bucket": "test-poc-postman-tests",
+          "expected_bucket_owner": "",
+          "id": "test-poc-postman-tests,private"
+         },
+         "sensitive_values": {
+          "access_control_policy": [
+           {
+            "grant": [
+             {
+              "grantee": [
+               {}
+              ]
+             }
+            ],
+            "owner": [
+             {}
+            ]
+           }
+          ]
+         },
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_s3_bucket_policy.postman_bucket",
+         "mode": "managed",
+         "type": "aws_s3_bucket_policy",
+         "name": "postman_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "bucket": "test-poc-postman-tests",
+          "id": "test-poc-postman-tests",
+          "policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": \"s3:*\",\n      \"Resource\": [\n        \"arn:aws:s3:::test-poc-postman-tests/*\",\n        \"arn:aws:s3:::test-poc-postman-tests\"\n      ],\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::603106382807:role/my_app_non-prod_test_framework\"\n      }\n    }\n  ]\n}"
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_iam_role.test_framework",
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket",
+          "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_s3_bucket_public_access_block.postman_bucket",
+         "mode": "managed",
+         "type": "aws_s3_bucket_public_access_block",
+         "name": "postman_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "block_public_acls": true,
+          "block_public_policy": true,
+          "bucket": "test-poc-postman-tests",
+          "id": "test-poc-postman-tests",
+          "ignore_public_acls": true,
+          "restrict_public_buckets": true
+         },
+         "sensitive_values": {},
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.aws_s3_bucket_versioning.postman_bucket",
+         "mode": "managed",
+         "type": "aws_s3_bucket_versioning",
+         "name": "postman_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "bucket": "test-poc-postman-tests",
+          "expected_bucket_owner": "",
+          "id": "test-poc-postman-tests",
+          "mfa": null,
+          "versioning_configuration": [
+           {
+            "mfa_delete": "",
+            "status": "Enabled"
+           }
+          ]
+         },
+         "sensitive_values": {
+          "versioning_configuration": [
+           {}
+          ]
+         },
+         "depends_on": [
+          "module.test_framework.module.test_runner.aws_s3_bucket.postman_bucket"
+         ]
+        },
+        {
+         "address": "module.test_framework.module.test_runner.data.aws_caller_identity.current",
+         "mode": "data",
+         "type": "aws_caller_identity",
+         "name": "current",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "account_id": "603106382807",
+          "arn": "arn:aws:sts::603106382807:assumed-role/AWSReservedSSO_AdministratorAccess_1b5c4e4773d6c344/Eli.Meitner@toluna.com",
+          "id": "603106382807",
+          "user_id": "AROAYY27RCPL3E4AHB62L:Eli.Meitner@toluna.com"
+         },
+         "sensitive_values": {}
+        },
+        {
+         "address": "module.test_framework.module.test_runner.data.aws_iam_policy_document.postman_bucket",
+         "mode": "data",
+         "type": "aws_iam_policy_document",
+         "name": "postman_bucket",
+         "provider_name": "registry.terraform.io/hashicorp/aws",
+         "schema_version": 0,
+         "values": {
+          "id": "2719035508",
+          "json": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": \"s3:*\",\n      \"Resource\": [\n        \"arn:aws:s3:::test-poc-postman-tests/*\",\n        \"arn:aws:s3:::test-poc-postman-tests\"\n      ],\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::603106382807:role/my_app_non-prod_test_framework\"\n      }\n    }\n  ]\n}",
+          "override_json": null,
+          "override_policy_documents": null,
+          "policy_id": null,
+          "source_json": null,
+          "source_policy_documents": null,
+          "statement": [
+           {
+            "actions": [
+             "s3:*"
+            ],
+            "condition": [],
+            "effect": "Allow",
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [
+             {
+              "identifiers": [
+               "arn:aws:iam::603106382807:role/my_app_non-prod_test_framework"
+              ],
+              "type": "AWS"
+             }
+            ],
+            "resources": [
+             "arn:aws:s3:::test-poc-postman-tests",
+             "arn:aws:s3:::test-poc-postman-tests/*"
+            ],
+            "sid": ""
+           }
+          ],
+          "version": "2012-10-17"
+         },
+         "sensitive_values": {
+          "statement": [
+           {
+            "actions": [
+             false
+            ],
+            "condition": [],
+            "not_actions": [],
+            "not_principals": [],
+            "not_resources": [],
+            "principals": [
+             {
+              "identifiers": [
+               false
+              ]
+             }
+            ],
+            "resources": [
+             false,
+             false
+            ]
+           }
+          ]
+         }
+        }
+       ],
+       "address": "module.test_framework.module.test_runner"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

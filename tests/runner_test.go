@@ -1,7 +1,9 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/aws"
@@ -43,6 +45,7 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
 	fmt.Println("Running Terraform init")
+	WriteStateJson(t, configureTerraformOptions(t))
 }
 
 func TestBucketExists(t *testing.T) {
@@ -70,4 +73,10 @@ func TestCleanUp(t *testing.T) {
 type ExampleFunctionPayload struct {
 	DeploymentId                  string
 	LifecycleEventHookExecutionId string
+}
+
+func WriteStateJson(t *testing.T, c *terraform.Options) {
+	jsonBlob := json.RawMessage(terraform.Show(t, configureTerraformOptions(t)))
+	file, _ := json.MarshalIndent(jsonBlob, "", " ")
+	_ = ioutil.WriteFile("test.json", file, 0644)
 }
