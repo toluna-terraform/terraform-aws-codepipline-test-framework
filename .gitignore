@@ -38,3 +38,4 @@ tests/junit.xslt
 tests/testsigma-report.html
 tests/resources.json
 tests/cover.out
+tests/reports/coverage.xml
