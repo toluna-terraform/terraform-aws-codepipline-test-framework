@@ -32,10 +32,4 @@ override.tf.json
 examples/test_framework/.terraform.lock.hcl
 tests/go.mod
 tests/go.sum
-tests/unit-tests.xml
-tests/report.html
-tests/junit.xslt
-tests/testsigma-report.html
-tests/resources.json
-tests/cover.out
-tests/reports/coverage.xml
+tests/reports/*

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-	<testsuite tests="4" failures="0" time="70.080000" name="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" timestamp="2022-03-29T07:35:40+03:00">
+	<testsuite tests="4" failures="0" time="72.190000" name="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" timestamp="2022-03-29T08:53:36+03:00">
 		<properties>
 			<property name="go.version" value="go1.18 linux/amd64"></property>
 		</properties>
-		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestSetup" time="48.000000"></testcase>
+		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestSetup" time="50.260000"></testcase>
 		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestBucketExists" time="1.540000"></testcase>
-		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestTerraformTestLambda" time="3.390000"></testcase>
-		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestCleanUp" time="17.150000"></testcase>
+		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestTerraformTestLambda" time="3.270000"></testcase>
+		<testcase classname="github.com/toluna-terraform/terraform-aws-codepipline-test-framework" name="TestCleanUp" time="17.120000"></testcase>
 	</testsuite>
 </testsuites>
