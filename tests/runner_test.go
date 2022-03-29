@@ -13,6 +13,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/mod/modfile"
 )
 
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
@@ -43,11 +44,22 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 	return terraformOptions
 
 }
+func getModName() string {
+	modcontent, err := ioutil.ReadFile("go.mod")
+	if err != nil {
+		log.Println(err)
+	}
+
+	modulename := fmt.Sprintf("%s", modfile.ModulePath(modcontent))
+	return string(modulename)
+}
+
+var moduleName = getModName()
 
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
 	log.Println("Running Terraform init")
-	WriteStateJson(t, configureTerraformOptions(t))
+	WriteConvergeFiles(t, configureTerraformOptions(t), moduleName)
 }
 
 func TestBucketExists(t *testing.T) {
@@ -78,7 +90,10 @@ type ExampleFunctionPayload struct {
 	LifecycleEventHookExecutionId string
 }
 
-func WriteStateJson(t *testing.T, c *terraform.Options) {
+func WriteConvergeFiles(t *testing.T, c *terraform.Options, moduleName string) {
+	if _, err := os.Stat("reports"); os.IsNotExist(err) {
+		os.MkdirAll("reports", 0700) // Create your file
+	}
 	log.Println("Writing Generated resources for coverage verification.")
 	file := []byte(terraform.RunTerraformCommand(t, configureTerraformOptions(t), "state", "list"))
 	_ = ioutil.WriteFile("resource_list.txt", file, 0644)
@@ -96,6 +111,7 @@ func WriteStateJson(t *testing.T, c *terraform.Options) {
 
 	resource_file.Close()
 	os.Remove("cover.go")
+	os.Remove("reports/cover.out")
 	f, err := os.OpenFile("cover.go",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -104,6 +120,15 @@ func WriteStateJson(t *testing.T, c *terraform.Options) {
 	if _, err := f.WriteString("package test\n\nimport \"log\"\n\nfunc check_cover(s string) {\n\t\tswitch {\n"); err != nil {
 		log.Println(err)
 	}
+	coverFile, err := os.OpenFile("reports/cover.out",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	if _, err := coverFile.WriteString("mode: set\n"); err != nil {
+		log.Println(err)
+	}
+	line := 7
 	for _, eachline := range txtlines {
 		if !strings.Contains(eachline, "data.") {
 			if err != nil {
@@ -115,6 +140,11 @@ func WriteStateJson(t *testing.T, c *terraform.Options) {
 			if _, err := f.WriteString(rn + "\n"); err != nil {
 				log.Println(err)
 			}
+			cn := fmt.Sprintf("%s/cover.go:%d.1,%d.0 1 0\n", moduleName, line, line+1)
+			if _, err := coverFile.WriteString(cn); err != nil {
+				log.Println(err)
+			}
+			line = line + 2
 		}
 	}
 	defer os.Remove("resource_list.txt")
