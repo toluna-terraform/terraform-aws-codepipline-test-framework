@@ -47,7 +47,7 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 func getModName() string {
 	modcontent, err := ioutil.ReadFile("go.mod")
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 
 	modulename := fmt.Sprintf("%s", modfile.ModulePath(modcontent))
@@ -64,12 +64,13 @@ func TestSetup(t *testing.T) {
 
 func TestBucketExists(t *testing.T) {
 	log.Println("Checking for test bucket")
-	//WriteConverge("aws_s3_bucket_policy.postman_bucket")
+	MarkAsCovered("aws_s3_bucket_policy.postman_bucket", moduleName)
 	err := aws.AssertS3BucketExistsE(t, "us-east-1", "test-poc-postman-tests")
 	assert.Nil(t, err, "Bucket not found")
 }
 func TestTerraformTestLambda(t *testing.T) {
 	log.Println("invoking test-runner Lambda")
+	MarkAsCovered("aws_lambda_function.test_framework", moduleName)
 	var invocationType aws.InvocationTypeOption = aws.InvocationTypeRequestResponse
 	input := &aws.LambdaOptions{
 		InvocationType: &invocationType,
@@ -118,31 +119,31 @@ func WriteConvergeFiles(t *testing.T, c *terraform.Options, moduleName string) {
 		log.Println(err)
 	}
 	if _, err := f.WriteString("package test\n\nimport \"log\"\n\nfunc check_cover(s string) {\n\t\tswitch {\n"); err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 	coverFile, err := os.OpenFile("reports/cover.out",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 	if _, err := coverFile.WriteString("mode: set\n"); err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 	line := 7
 	for _, eachline := range txtlines {
 		if !strings.Contains(eachline, "data.") {
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			eachline = strings.Replace(eachline, "\"", "\\\"", -1)
 			resource_name := strings.Split(eachline, ".")
 			rn := fmt.Sprintf("case s == \"%s.%s\":\n\t\tlog.Println(\"check coverage\")", resource_name[len(resource_name)-2], resource_name[len(resource_name)-1])
 			if _, err := f.WriteString(rn + "\n"); err != nil {
-				log.Println(err)
+				log.Fatalln(err)
 			}
 			cn := fmt.Sprintf("%s/cover.go:%d.1,%d.0 1 0\n", moduleName, line, line+1)
 			if _, err := coverFile.WriteString(cn); err != nil {
-				log.Println(err)
+				log.Fatalln(err)
 			}
 			line = line + 2
 		}
@@ -150,17 +151,47 @@ func WriteConvergeFiles(t *testing.T, c *terraform.Options, moduleName string) {
 	defer os.Remove("resource_list.txt")
 	defer f.Close()
 	if _, err := f.WriteString("\t}\n}"); err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
 }
 
-func WriteConverge(s string) {
-	/*
-		get module name from file
-		write cover.out
-		find line number
-		mode: set
-		github.com/toluna-terraform/terraform-aws-codepipline-test-framework/cover.go:7.5,8.5 4 1
-		github.com/toluna-terraform/terraform-aws-codepipline-test-framework/cover.go:8.5,9.5 4 0
-	*/
+func MarkAsCovered(s string, moduleName string) {
+	f, err := os.Open("cover.go")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+
+	lineNum := 1
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), s) {
+
+			input, err := ioutil.ReadFile("reports/cover.out")
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			lines := strings.Split(string(input), "\n")
+
+			for i, line := range lines {
+				codeline := fmt.Sprintf("%d.1", lineNum)
+				if strings.Contains(line, codeline) {
+					cn := fmt.Sprintf("%s/cover.go:%d.1,%d.0 1 1", moduleName, lineNum, lineNum+1)
+					lines[i] = cn
+				}
+			}
+			output := strings.Join(lines, "\n")
+			err = ioutil.WriteFile("reports/cover.out", []byte(output), 0644)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+		}
+		lineNum++
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalln(err)
+	}
 }
