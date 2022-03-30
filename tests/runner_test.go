@@ -65,7 +65,6 @@ func TestBucketExists(t *testing.T) {
 	coverage.MarkAsCovered("aws_s3_bucket_policy.postman_bucket", moduleName)
 	err := aws.AssertS3BucketExistsE(t, "us-east-1", "test-poc-postman-tests")
 	assert.Nil(t, err, "Bucket not found")
-	assert.Equal(t, 1, 2, "Fail on purpose")
 }
 func TestTerraformTestLambda(t *testing.T) {
 	log.Println("invoking test-runner Lambda")
