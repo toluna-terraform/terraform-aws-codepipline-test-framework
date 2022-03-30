@@ -30,12 +30,18 @@ locals {
 
 resource "aws_s3_bucket" "postman_bucket" {
   force_destroy = true
-  bucket        = "${var.app_name}-${var.env_type}-postman-tests"
+  bucket        = "test-poc-postman-tests"
+    depends_on = [
+      aws_s3_bucket.postman_bucket
+    ]
 }
 
 resource "aws_s3_bucket_acl" "postman_bucket" {
   bucket = aws_s3_bucket.postman_bucket.id
   acl    = "private"
+    depends_on = [
+      aws_s3_bucket.postman_bucket
+    ]
 }
 
 resource "aws_s3_bucket_versioning" "postman_bucket" {
@@ -43,6 +49,9 @@ resource "aws_s3_bucket_versioning" "postman_bucket" {
   versioning_configuration {
     status = "Enabled"
   }
+  depends_on = [
+      aws_s3_bucket.postman_bucket
+    ]
 }
 
 resource "aws_s3_bucket_public_access_block" "postman_bucket" {
@@ -51,11 +60,17 @@ resource "aws_s3_bucket_public_access_block" "postman_bucket" {
   block_public_policy = true
   ignore_public_acls  = true
   restrict_public_buckets = true
+    depends_on = [
+      aws_s3_bucket.postman_bucket
+    ]
 }
 
 resource "aws_s3_bucket_policy" "postman_bucket" {
   bucket = aws_s3_bucket.postman_bucket.id
   policy = data.aws_iam_policy_document.postman_bucket.json
+    depends_on = [
+      aws_s3_bucket.postman_bucket
+    ]
 }
 
 resource "aws_lambda_layer_version" "lambda_layer" {
@@ -77,7 +92,14 @@ resource "aws_lambda_function" "test_framework" {
   environment {
     variables = local.lambda_env_variables
   }
-  depends_on = [aws_lambda_layer_version.lambda_layer]
+  depends_on = [
+    aws_lambda_layer_version.lambda_layer,
+    aws_s3_bucket.postman_bucket,
+    aws_s3_bucket_acl.postman_bucket,
+    aws_s3_bucket_versioning.postman_bucket,
+    aws_s3_bucket_public_access_block.postman_bucket,
+    aws_s3_bucket_policy.postman_bucket
+    ]
 }
 
 # IAM

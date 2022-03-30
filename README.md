@@ -16,17 +16,11 @@ The following resources will be created:
 
 ## Usage
 ```hcl
-module "test_framework" {
-  source                = "toluna-terraform/codepipeline-test-framework"
-  app_name = local.app_name
-  env_type = local.env_vars.env_type
-  postman_collections = [
-  {
-    collection = "chorus.postman_collection.json"
-    environment = "postman_environment.json"
-  }
-  ]
-}
+module "test_runner" {
+  source = "./modules/test-runner"
+  app_name = var.app_name
+  env_type = var.env_type
+  postman_collections = var.postman_collections
 }
 ```
 
@@ -86,3 +80,19 @@ No inputs.
 ## Outputs
 No outputs.
 
+## Tests
+### Pre Requisites 
+* go 1.17 and above
+* gotestsum https://github.com/gotestyourself/gotestsum/releases (wrapper for go junit tests)
+
+### Steps to run
+* under tests folder run the following command
+* go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
+* go mod tidy (to pull all dependencies)
+* AWS_PROFILE=<account profile name> gotestsum --format testname --junitfile unit-tests.xml --junitfile-testsuite-name short --junitfile-testcase-classname short
+
+### References
+https://github.com/gruntwork-io/terratest/tree/dae956eb39e91dfb00f3ba85060a6dbf58c6782b
+https://terratest.gruntwork.io/docs/testing-best-practices
+https://terratest.gruntwork.io/docs/getting-started/quick-start/
+https://terratest.gruntwork.io/docs/testing-best-practices/debugging-interleaved-test-output/#installing-the-utility-binaries
