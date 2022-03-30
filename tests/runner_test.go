@@ -62,9 +62,9 @@ func TestSetup(t *testing.T) {
 
 func TestBucketExists(t *testing.T) {
 	log.Println("Checking for test bucket")
-	coverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport[\"my_env\"]", moduleName)
-	coverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport[\"my_env\"]", moduleName)
-	coverage.MarkAsCovered("aws_codebuild_report_group.TestReport[\"my_env\"]", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my_env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my_env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my_env']", moduleName)
 	coverage.MarkAsCovered("aws_codebuild_project.tests_reports", moduleName)
 	coverage.MarkAsCovered("aws_iam_role.codebuild_role", moduleName)
 	coverage.MarkAsCovered("aws_iam_role_policy.codebuild_policy", moduleName)
