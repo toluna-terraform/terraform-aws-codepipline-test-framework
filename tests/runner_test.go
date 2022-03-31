@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"testing"
 
@@ -10,8 +9,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/assert"
+	"github.com/toluna-terraform/terraform-test-library/modules/commons"
 	"github.com/toluna-terraform/terraform-test-library/modules/coverage"
-	"golang.org/x/mod/modfile"
 )
 
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
@@ -42,22 +41,13 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 	return terraformOptions
 
 }
-func getModName() string {
-	modcontent, err := ioutil.ReadFile("go.mod")
-	if err != nil {
-		log.Fatalln(err)
-	}
 
-	modulename := fmt.Sprintf("%s", modfile.ModulePath(modcontent))
-	return string(modulename)
-}
-
-var moduleName = getModName()
+var moduleName = commons.getModName()
 
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
 	log.Println("Running Terraform init")
-	coverage.WriteConvergeFiles(t, configureTerraformOptions(t), moduleName)
+	coverage.WriteCovergeFiles(t, configureTerraformOptions(t), moduleName)
 }
 
 func TestBucketExists(t *testing.T) {
