@@ -2,15 +2,14 @@ package test
 
 import (
 	"fmt"
-	"log"
-	"testing"
-
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/assert"
 	"github.com/toluna-terraform/terraform-test-library/modules/commons"
 	"github.com/toluna-terraform/terraform-test-library/modules/coverage"
+	"log"
+	"testing"
 )
 
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
@@ -42,7 +41,7 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 
 }
 
-var moduleName = commons.getModName()
+var moduleName = commons.GetModName()
 
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
