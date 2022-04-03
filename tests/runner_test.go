@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	aws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/s3"
 	aws_terratest "github.com/gruntwork-io/terratest/modules/aws"
@@ -155,6 +156,52 @@ func TestTerraformRunnerLambdaLayer(t *testing.T) {
 	}
 	assert.True(t, strings.HasSuffix(*result.LayerArn, "layer:postman"), "Wrong Layer ARN returned")
 	assert.True(t, strings.HasSuffix(*result.LayerVersionArn, "layer:postman:1"), "Wrong Version ARN returned")
+}
+
+func TestTerraformIAMGetRoleTestFrameWork(t *testing.T) {
+	log.Println("Verify aws_iam_role.test_framework")
+	coverage.MarkAsCovered("aws_iam_role.test_framework", moduleName)
+	sess, err := aws_terratest.NewAuthenticatedSession(region)
+	svc := iam.New(sess)
+	input := &iam.GetRoleInput{
+		RoleName: aws.String("my_app_non-prod_test_framework"),
+	}
+	result, err := svc.GetRole(input)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Role")
+	}
+	assert.True(t, strings.HasSuffix(*result.Role.Arn, "my_app_non-prod_test_framework"), "Wrong role ARN returned")
+}
+
+func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
+	log.Println("Verify aws_iam_role.aws_iam_role.codebuild_role")
+	coverage.MarkAsCovered("aws_iam_role.codebuild_role", moduleName)
+	sess, err := aws_terratest.NewAuthenticatedSession(region)
+	svc := iam.New(sess)
+	input := &iam.GetRoleInput{
+		RoleName: aws.String("role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"),
+	}
+	result, err := svc.GetRole(input)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Role")
+	}
+	assert.True(t, strings.HasSuffix(*result.Role.Arn, "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"), "Wrong role ARN returned")
+}
+
+func TestAtachedPoliciesTestFrameworkRole(t *testing.T) {
+	log.Println("Verify policies for test framework role ")
+	sess, err := aws_terratest.NewAuthenticatedSession(region)
+	svc := iam.New(sess)
+	input := &iam.ListAttachedRolePoliciesInput{
+		RoleName: aws.String("my_app_non-prod_test_framework"),
+	}
+	result, err := svc.ListAttachedRolePolicies(input)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Role")
+	}
+	for i, s := range result.AttachedPolicies {
+		log.Println(i, s) // get arn and validate policy name
+	}
 }
 
 func TestCleanUp(t *testing.T) {
