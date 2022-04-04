@@ -277,9 +277,9 @@ func TestCodeBuildTestReportsProject(t *testing.T) {
 
 func TestCodeBuildTestReportsGroups(t *testing.T) {
 	log.Println("Verify codebuild report groups are created")
-	coverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my_env']", moduleName)
-	coverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my_env']", moduleName)
-	coverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my_env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my-env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my-env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my-env']", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Report group")
