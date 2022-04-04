@@ -288,8 +288,12 @@ func TestCodeBuildTestReportsGroups(t *testing.T) {
 	input := &codebuild.ListReportGroupsInput{}
 	result, err := svc.ListReportGroups(input)
 	reportList := []string{"my-app-my-env-CodeCoverageReport", "my-app-my-env-IntegrationTestReport", "my-app-my-env-TestReport"}
+
 	for _, reportGroupName := range result.ReportGroups {
-		assert.True(t, contains(reportList, *reportGroupName), fmt.Sprintf("Report group %s not created", *reportGroupName))
+		groupName := strings.Split(*reportGroupName, "/")
+		if strings.HasPrefix(groupName[1], "my-app") {
+			assert.True(t, contains(reportList, groupName[1]), fmt.Sprintf("Report group %s not created", groupName[1]))
+		}
 	}
 }
 
