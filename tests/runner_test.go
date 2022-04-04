@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -190,13 +191,18 @@ func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 
 func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	log.Println("Verify policies for test framework role ")
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-cloudwatch", moduleName)
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-codebuild", moduleName)
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-codedeploy", moduleName)
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-ec2", moduleName)
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-execution", moduleName)
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-ssm", moduleName)
+	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-s3", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.ListAttachedRolePoliciesInput{
 		RoleName: aws.String("my_app_non-prod_test_framework"),
 	}
-	//result, err := svc.ListAttachedRolePolicies(input)
-
 	result, err := svc.ListAttachedRolePolicies(input)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Role")
@@ -211,6 +217,35 @@ func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	for _, policyName := range pname {
 		assert.True(t, contains(policyList, policyName), fmt.Sprintf("Policy name %s should not attached", policyName))
 	}
+}
+
+func TestRolePoliciesCodeBuildRole(t *testing.T) {
+	log.Println("Verify policies for codebuild role ")
+	sess, err := aws_terratest.NewAuthenticatedSession(region)
+	svc := iam.New(sess)
+	input := &iam.GetRolePolicyInput{
+		RoleName:   aws.String("role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"),
+		PolicyName: aws.String("policy-codebuild-publish-reports-my_app-non-prod"),
+	}
+	result, err := svc.GetRolePolicy(input)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Role")
+	}
+
+	// var objs map[string]interface{}
+	// json.Unmarshal([]byte(*result.PolicyDocument), &objs)
+	// policy := objs["Statement"].([]interface{})
+	// statement := policy[0].(map[string]interface{})
+	// principal := statement["Principal"].(map[string]interface{})
+	// resource := statement["Resource"].([]interface{})
+	// /*assert.Equal(t, statement["Effect"], "Allow", "Wrong Effect in policy")
+	// assert.True(t, strings.HasSuffix(resource[1].(string), "test-poc-postman-tests"), "Wrong Resource in policy")
+	// assert.True(t, strings.HasSuffix(principal["AWS"].(string), "my_app_non-prod_test_framework"), "Wrong Principal in policy")
+	// assert.Equal(t, statement["Action"], "s3:*", "Wrong Action in policy")*/
+	// log.Printf(principal["AWS"].(string))
+	// log.Printf(resource[1].(string))
+
+	log.Printf(url.QueryEscape(*result.PolicyDocument))
 }
 
 func TestCleanUp(t *testing.T) {
