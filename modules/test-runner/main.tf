@@ -30,7 +30,7 @@ locals {
 
 resource "aws_s3_bucket" "postman_bucket" {
   force_destroy = true
-  bucket        = "test-poc-postman-tests"
+  bucket        = "${var.app_name}-${var.env_type}-postman-tests"
     depends_on = [
       aws_s3_bucket.postman_bucket
     ]

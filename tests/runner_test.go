@@ -24,7 +24,7 @@ import (
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
 var expectedEnvType = fmt.Sprintf("terratest-env-type-%s", random.UniqueId())
 var expectedAppEnvs = fmt.Sprintf("terratest-app-envs-%s", random.UniqueId())
-var expectedFuncName = fmt.Sprintf("%s-test-framework", "my_app-non-prod")
+var expectedFuncName = fmt.Sprintf("%s-test-framework", "my-app-non-prod")
 
 func configureTerraformOptions(t *testing.T) *terraform.Options {
 
@@ -39,7 +39,7 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 			"env_type": expectedEnvType,
 			"postman_collections": `[
 				{
-				  collection = "my_app.postman_collection.json"
+				  collection = "my-app.postman_collection.json"
 				  environment = "postman_environment.json"
 				}
 				]`,
@@ -52,7 +52,7 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 
 var moduleName = commons.GetModName()
 var region = "us-east-1"
-var bucket = "test-poc-postman-tests"
+var bucket = "my-app-non-prod-postman-tests"
 
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
@@ -72,7 +72,7 @@ func TestBucketACLExists(t *testing.T) {
 	coverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := s3.New(sess)
-	bucket := "test-poc-postman-tests"
+	bucket := bucket
 	result, err := svc.GetBucketAcl(&s3.GetBucketAclInput{Bucket: &bucket})
 	if err != nil {
 		log.Println(err)
@@ -106,8 +106,6 @@ func TestBucketPublicAccessBlock(t *testing.T) {
 }
 
 func TestBucketPolicy(t *testing.T) {
-	log.Println("Checking for test bucket public access block")
-	coverage.MarkAsCovered("aws_s3_bucket_policy.postman_bucket", moduleName)
 	log.Println("Checking for test bucket acl ")
 	coverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
@@ -124,8 +122,8 @@ func TestBucketPolicy(t *testing.T) {
 	principal := statement["Principal"].(map[string]interface{})
 	resource := statement["Resource"].([]interface{})
 	assert.Equal(t, statement["Effect"], "Allow", "Wrong Effect in policy")
-	assert.True(t, strings.HasSuffix(resource[1].(string), "test-poc-postman-tests"), "Wrong Resource in policy")
-	assert.True(t, strings.HasSuffix(principal["AWS"].(string), "my_app_non-prod_test_framework"), "Wrong Principal in policy")
+	assert.True(t, strings.HasSuffix(resource[1].(string), bucket), "Wrong Resource in policy")
+	assert.True(t, strings.HasSuffix(principal["AWS"].(string), "my-app_non-prod_test_framework"), "Wrong Principal in policy")
 	assert.Equal(t, statement["Action"], "s3:*", "Wrong Action in policy")
 
 }
@@ -166,13 +164,13 @@ func TestTerraformIAMGetRoleTestFrameWork(t *testing.T) {
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.GetRoleInput{
-		RoleName: aws.String("my_app_non-prod_test_framework"),
+		RoleName: aws.String("my-app_non-prod_test_framework"),
 	}
 	result, err := svc.GetRole(input)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Role")
 	}
-	assert.True(t, strings.HasSuffix(*result.Role.Arn, "my_app_non-prod_test_framework"), "Wrong role ARN returned")
+	assert.True(t, strings.HasSuffix(*result.Role.Arn, "my-app_non-prod_test_framework"), "Wrong role ARN returned")
 }
 
 func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
@@ -181,13 +179,13 @@ func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.GetRoleInput{
-		RoleName: aws.String("role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"),
+		RoleName: aws.String("role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod"),
 	}
 	result, err := svc.GetRole(input)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Role")
 	}
-	assert.True(t, strings.HasSuffix(*result.Role.Arn, "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"), "Wrong role ARN returned")
+	assert.True(t, strings.HasSuffix(*result.Role.Arn, "role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod"), "Wrong role ARN returned")
 }
 
 func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
@@ -202,7 +200,7 @@ func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.ListAttachedRolePoliciesInput{
-		RoleName: aws.String("my_app_non-prod_test_framework"),
+		RoleName: aws.String("my-app_non-prod_test_framework"),
 	}
 	result, err := svc.ListAttachedRolePolicies(input)
 	if err != nil {
@@ -226,8 +224,8 @@ func TestRolePoliciesCodeBuildRole(t *testing.T) {
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.GetRolePolicyInput{
-		RoleName:   aws.String("role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"),
-		PolicyName: aws.String("policy-codebuild-publish-reports-my_app-non-prod"),
+		RoleName:   aws.String("role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod"),
+		PolicyName: aws.String("policy-codebuild-publish-reports-my-app-non-prod"),
 	}
 	result, err := svc.GetRolePolicy(input)
 	if err != nil {
@@ -270,12 +268,34 @@ func TestCodeBuildTestReportsProject(t *testing.T) {
 	}
 	projectFound := false
 	for _, projectName := range result.Projects {
-		if *projectName == "codebuild-publish-reports-my_app-non-prod" {
+		if *projectName == "codebuild-publish-reports-my-app-non-prod" {
 			projectFound = true
 		}
 	}
-	assert.True(t, projectFound, fmt.Sprintf("Project %s not created", "codebuild-publish-reports-my_app-non-prod"))
+	assert.True(t, projectFound, fmt.Sprintf("Project %s not created", "codebuild-publish-reports-my-app-non-prod"))
 }
+
+func TestCodeBuildTestReportsGroups(t *testing.T) {
+	log.Println("Verify codebuild report groups are created")
+	sess, err := aws_terratest.NewAuthenticatedSession(region)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Report group")
+	}
+	svc := codebuild.New(sess)
+	input := &codebuild.ListReportGroupsInput{}
+	result, err := svc.ListReportGroups(input)
+	for _, reportGroupName := range result.ReportGroups {
+		log.Printf(*reportGroupName)
+	}
+}
+
+/*
+case s == "aws_codebuild_report_group.CodeCoverageReport['my_env']":
+		log.Println("check coverage")
+case s == "aws_codebuild_report_group.IntegrationTestReport['my_env']":
+		log.Println("check coverage")
+case s == "aws_codebuild_report_group.TestReport['my_env']":
+*/
 
 func TestCleanUp(t *testing.T) {
 	log.Println("Running Terraform Destroy")

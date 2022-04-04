@@ -1,5 +1,5 @@
 data "aws_s3_bucket" "codepipeline_bucket" {
-  bucket = "test-poc-postman-tests"
+  bucket = "${var.app_name}-${var.env_type}-postman-tests"
 }
 
 data "aws_iam_policy_document" "codebuild_assume_role_policy" {
