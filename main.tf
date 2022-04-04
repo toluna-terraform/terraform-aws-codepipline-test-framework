@@ -1,18 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "4.6"
-    }
-  }
-}
-
-provider "aws" {
-  region  = "us-east-1"
-}
-
-
-
 module "test_reports" {
   source                                = "./modules/test-publisher"
   app_name                              = var.app_name
