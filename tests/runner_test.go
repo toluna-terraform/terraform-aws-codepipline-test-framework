@@ -106,8 +106,8 @@ func TestBucketPublicAccessBlock(t *testing.T) {
 }
 
 func TestBucketPolicy(t *testing.T) {
-	log.Println("Checking for test bucket acl ")
-	coverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
+	log.Println("Checking for test bucket policy ")
+	coverage.MarkAsCovered("aws_s3_bucket_policy.postman_bucket", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := s3.New(sess)
 	result, err := svc.GetBucketPolicy(&s3.GetBucketPolicyInput{Bucket: &bucket})
