@@ -277,6 +277,9 @@ func TestCodeBuildTestReportsProject(t *testing.T) {
 
 func TestCodeBuildTestReportsGroups(t *testing.T) {
 	log.Println("Verify codebuild report groups are created")
+	coverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my_env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my_env']", moduleName)
+	coverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my_env']", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Report group")
@@ -284,18 +287,11 @@ func TestCodeBuildTestReportsGroups(t *testing.T) {
 	svc := codebuild.New(sess)
 	input := &codebuild.ListReportGroupsInput{}
 	result, err := svc.ListReportGroups(input)
+	reportList := []string{"my-app-my-env-CodeCoverageReport", "my-app-my-env-IntegrationTestReport", "my-app-my-env-TestReport"}
 	for _, reportGroupName := range result.ReportGroups {
-		log.Printf(*reportGroupName)
+		assert.True(t, contains(reportList, *reportGroupName), fmt.Sprintf("Report group %s not created", *reportGroupName))
 	}
 }
-
-/*
-case s == "aws_codebuild_report_group.CodeCoverageReport['my_env']":
-		log.Println("check coverage")
-case s == "aws_codebuild_report_group.IntegrationTestReport['my_env']":
-		log.Println("check coverage")
-case s == "aws_codebuild_report_group.TestReport['my_env']":
-*/
 
 func TestCleanUp(t *testing.T) {
 	log.Println("Running Terraform Destroy")
