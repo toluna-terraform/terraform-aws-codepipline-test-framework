@@ -38,16 +38,3 @@ data "aws_iam_policy_document" "codepipeline_assume_role_policy" {
   }
 }
 
-data "aws_iam_policy_document" "codepipeline_role_policy" {
-  statement {
-    actions = [
-          "s3:*",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "ssm:*",
-          "codebuild:*"
-    ]
-    resources = ["*"]
-  }
-}

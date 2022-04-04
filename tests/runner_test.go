@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	aws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -220,6 +221,7 @@ func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 }
 
 func TestRolePoliciesCodeBuildRole(t *testing.T) {
+	coverage.MarkAsCovered("aws_iam_role_policy.codebuild_policy", moduleName)
 	log.Println("Verify policies for codebuild role ")
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
@@ -229,23 +231,50 @@ func TestRolePoliciesCodeBuildRole(t *testing.T) {
 	}
 	result, err := svc.GetRolePolicy(input)
 	if err != nil {
-		assert.Nil(t, err, "Failed to get Role")
+		assert.Nil(t, err, "Failed to get Policy")
 	}
+	encodedValue := *result.PolicyDocument
+	decodedValue, err := url.QueryUnescape(encodedValue)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Policy")
+	}
+	expectedPolicy := strings.ReplaceAll(`{
+	"Version":"2012-10-17",
+	"Statement":[
+		{
+			"Sid":"",
+			"Effect":"Allow",
+			"Action":[
+				"ssm:*",
+				"s3:*",
+				"logs:*",
+				"codebuild:*"
+			],
+			"Resource":"*"
+		}
+		]
+	}`, "\t", "")
+	decodedPolicy := strings.ReplaceAll(decodedValue, " ", "")
+	assert.Equal(t, expectedPolicy, decodedPolicy, fmt.Sprintf("Policy document %s does not match expected document", expectedPolicy))
+}
 
-	// var objs map[string]interface{}
-	// json.Unmarshal([]byte(*result.PolicyDocument), &objs)
-	// policy := objs["Statement"].([]interface{})
-	// statement := policy[0].(map[string]interface{})
-	// principal := statement["Principal"].(map[string]interface{})
-	// resource := statement["Resource"].([]interface{})
-	// /*assert.Equal(t, statement["Effect"], "Allow", "Wrong Effect in policy")
-	// assert.True(t, strings.HasSuffix(resource[1].(string), "test-poc-postman-tests"), "Wrong Resource in policy")
-	// assert.True(t, strings.HasSuffix(principal["AWS"].(string), "my_app_non-prod_test_framework"), "Wrong Principal in policy")
-	// assert.Equal(t, statement["Action"], "s3:*", "Wrong Action in policy")*/
-	// log.Printf(principal["AWS"].(string))
-	// log.Printf(resource[1].(string))
-
-	log.Printf(url.QueryEscape(*result.PolicyDocument))
+func TestCodeBuildTestReportsProject(t *testing.T) {
+	coverage.MarkAsCovered("aws_codebuild_project.tests_reports", moduleName)
+	log.Println("Verify codebuild project is created")
+	sess, err := aws_terratest.NewAuthenticatedSession(region)
+	svc := codebuild.New(sess)
+	input := &codebuild.ListProjectsInput{}
+	result, err := svc.ListProjects(input)
+	if err != nil {
+		assert.Nil(t, err, "Failed to get Policy")
+	}
+	projectFound := false
+	for _, projectName := range result.Projects {
+		if *projectName == "codebuild-publish-reports-my_app-non-prod" {
+			projectFound = true
+		}
+	}
+	assert.True(t, projectFound, fmt.Sprintf("Project %s not created", "codebuild-publish-reports-my_app-non-prod"))
 }
 
 func TestCleanUp(t *testing.T) {
