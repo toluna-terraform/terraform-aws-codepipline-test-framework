@@ -188,19 +188,28 @@ func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 	assert.True(t, strings.HasSuffix(*result.Role.Arn, "role-my_app-non-prod-codebuild-publish-reports-my_app-non-prod"), "Wrong role ARN returned")
 }
 
-func TestAtachedPoliciesTestFrameworkRole(t *testing.T) {
+func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	log.Println("Verify policies for test framework role ")
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.ListAttachedRolePoliciesInput{
 		RoleName: aws.String("my_app_non-prod_test_framework"),
 	}
+	//result, err := svc.ListAttachedRolePolicies(input)
+
 	result, err := svc.ListAttachedRolePolicies(input)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Role")
 	}
-	for i, s := range result.AttachedPolicies {
-		log.Println(i, s) // get arn and validate policy name
+	policyList := []string{}
+	pname := []string{"AWSLambdaBasicExecutionRole", "AmazonSSMReadOnlyAccess", "CloudWatchFullAccess", "AWSCodeDeployFullAccess", "AWSCodeBuildDeveloperAccess", "AmazonS3FullAccess", "ElasticLoadBalancingReadOnly"}
+	for _, policyName := range result.AttachedPolicies {
+		log.Printf("Verify policy %s for test framework role is attached", *policyName.PolicyName)
+		policyList = append(policyList, *policyName.PolicyName)
+		assert.True(t, contains(pname, *policyName.PolicyName), fmt.Sprintf("Policy name %s not attached", *policyName.PolicyName))
+	}
+	for _, policyName := range pname {
+		assert.True(t, contains(policyList, policyName), fmt.Sprintf("Policy name %s should not attached", policyName))
 	}
 }
 
@@ -212,4 +221,14 @@ func TestCleanUp(t *testing.T) {
 type ExampleFunctionPayload struct {
 	DeploymentId                  string
 	LifecycleEventHookExecutionId string
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }
