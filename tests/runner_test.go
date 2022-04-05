@@ -1,7 +1,6 @@
 package test
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -12,13 +11,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/aws/aws-sdk-go/service/s3"
 	aws_terratest "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/assert"
-	"github.com/toluna-terraform/terraform-test-library/modules/commons"
-	"github.com/toluna-terraform/terraform-test-library/modules/coverage"
+	tolunacommons "github.com/toluna-terraform/terraform-test-library/modules/commons"
+	tolunacoverage "github.com/toluna-terraform/terraform-test-library/modules/coverage"
+	tolunas3aws "github.com/toluna-terraform/terraform-test-library/modules/toluna_aws"
 )
 
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
@@ -50,55 +49,44 @@ func configureTerraformOptions(t *testing.T) *terraform.Options {
 
 }
 
-var moduleName = commons.GetModName()
+var moduleName = tolunacommons.GetModName()
 var region = "us-east-1"
 var bucket = "my-app-non-prod-postman-tests"
 
 func TestSetup(t *testing.T) {
 	terraform.InitAndApply(t, configureTerraformOptions(t))
 	log.Println("Running Terraform init")
-	coverage.WriteCovergeFiles(t, configureTerraformOptions(t), moduleName)
+	tolunacoverage.WriteCovergeFiles(t, configureTerraformOptions(t), moduleName)
 }
 
 func TestBucketExists(t *testing.T) {
 	log.Println("Checking for test bucket")
-	coverage.MarkAsCovered("aws_s3_bucket.postman_bucket", moduleName)
+	tolunacoverage.MarkAsCovered("aws_s3_bucket.postman_bucket", moduleName)
 	err := aws_terratest.AssertS3BucketExistsE(t, region, bucket)
 	assert.Nil(t, err, "Bucket not found")
 }
 
 func TestBucketACLExists(t *testing.T) {
 	log.Println("Checking for test bucket acl ")
-	coverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := s3.New(sess)
-	bucket := bucket
-	result, err := svc.GetBucketAcl(&s3.GetBucketAclInput{Bucket: &bucket})
-	if err != nil {
-		log.Println(err)
-	}
+	tolunacoverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
+	result := tolunas3aws.S3GetBucketACLs(t, region, bucket)
 	assert.NotNil(t, *result.Owner.DisplayName, "Owner not found")
 	assert.Equal(t, *result.Grants[0].Permission, "FULL_CONTROL", "ACL not granted")
 }
 
 func TestBucketVersioningExists(t *testing.T) {
 	log.Println("Checking for test bucket versioning")
-	coverage.MarkAsCovered("aws_s3_bucket_versioning.postman_bucket", moduleName)
+	tolunacoverage.MarkAsCovered("aws_s3_bucket_versioning.postman_bucket", moduleName)
 	err := aws_terratest.AssertS3BucketVersioningExistsE(t, region, bucket)
 	assert.Nil(t, err, "Bucket version not found")
 }
 
 func TestBucketPublicAccessBlock(t *testing.T) {
 	log.Println("Checking for test bucket public access block")
-	coverage.MarkAsCovered("aws_s3_bucket_public_access_block.postman_bucket", moduleName)
+	tolunacoverage.MarkAsCovered("aws_s3_bucket_public_access_block.postman_bucket", moduleName)
 	log.Println("Checking for test bucket acl ")
-	coverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := s3.New(sess)
-	result, err := svc.GetPublicAccessBlock(&s3.GetPublicAccessBlockInput{Bucket: &bucket})
-	if err != nil {
-		assert.Nil(t, err, "Failed to get bucket public access block")
-	}
+	tolunacoverage.MarkAsCovered("aws_s3_bucket_acl.postman_bucket", moduleName)
+	result := tolunas3aws.S3GetPublicAccessBlock(t, region, bucket)
 	assert.True(t, *result.PublicAccessBlockConfiguration.BlockPublicAcls, "BlockPublicAcls = False")
 	assert.True(t, *result.PublicAccessBlockConfiguration.BlockPublicPolicy, "BlockPublicPolicy = False")
 	assert.True(t, *result.PublicAccessBlockConfiguration.IgnorePublicAcls, "IgnorePublicAcls = False")
@@ -107,30 +95,17 @@ func TestBucketPublicAccessBlock(t *testing.T) {
 
 func TestBucketPolicy(t *testing.T) {
 	log.Println("Checking for test bucket policy ")
-	coverage.MarkAsCovered("aws_s3_bucket_policy.postman_bucket", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := s3.New(sess)
-	result, err := svc.GetBucketPolicy(&s3.GetBucketPolicyInput{Bucket: &bucket})
-	if err != nil {
-		assert.Nil(t, err, "Failed to get bucket policy")
-	}
-	assert.NotNil(t, *result.Policy, "Failed to get Bucket policy")
-	var objs map[string]interface{}
-	json.Unmarshal([]byte(*result.Policy), &objs)
-	policy := objs["Statement"].([]interface{})
-	statement := policy[0].(map[string]interface{})
-	principal := statement["Principal"].(map[string]interface{})
-	resource := statement["Resource"].([]interface{})
-	assert.Equal(t, statement["Effect"], "Allow", "Wrong Effect in policy")
-	assert.True(t, strings.HasSuffix(resource[1].(string), bucket), "Wrong Resource in policy")
-	assert.True(t, strings.HasSuffix(principal["AWS"].(string), "my-app_non-prod_test_framework"), "Wrong Principal in policy")
-	assert.Equal(t, statement["Action"], "s3:*", "Wrong Action in policy")
-
+	tolunacoverage.MarkAsCovered("aws_s3_bucket_policy.postman_bucket", moduleName)
+	result := tolunas3aws.S3GetBucketPolicy(t, region, bucket)
+	assert.Equal(t, result.Effect, "Allow", "Wrong Effect in policy")
+	assert.True(t, strings.HasSuffix(result.Resource, bucket), "Wrong Resource in policy")
+	assert.True(t, strings.HasSuffix(result.Principal, "my-app_non-prod_test_framework"), "Wrong Principal in policy")
+	assert.Equal(t, result.Action, "s3:*", "Wrong Action in policy")
 }
 
 func TestTerraformInvokeRunnerLambda(t *testing.T) {
 	log.Println("invoking test-runner Lambda")
-	coverage.MarkAsCovered("aws_lambda_function.test_framework", moduleName)
+	tolunacoverage.MarkAsCovered("aws_lambda_function.test_framework", moduleName)
 	var invocationType aws_terratest.InvocationTypeOption = aws_terratest.InvocationTypeRequestResponse
 	input := &aws_terratest.LambdaOptions{
 		InvocationType: &invocationType,
@@ -143,7 +118,7 @@ func TestTerraformInvokeRunnerLambda(t *testing.T) {
 
 func TestTerraformRunnerLambdaLayer(t *testing.T) {
 	log.Println("Verify test-runner Lambda layer")
-	coverage.MarkAsCovered("aws_lambda_layer_version.lambda_layer", moduleName)
+	tolunacoverage.MarkAsCovered("aws_lambda_layer_version.lambda_layer", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := lambda.New(sess)
 	input := &lambda.GetLayerVersionInput{
@@ -160,7 +135,7 @@ func TestTerraformRunnerLambdaLayer(t *testing.T) {
 
 func TestTerraformIAMGetRoleTestFrameWork(t *testing.T) {
 	log.Println("Verify aws_iam_role.test_framework")
-	coverage.MarkAsCovered("aws_iam_role.test_framework", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role.test_framework", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.GetRoleInput{
@@ -175,7 +150,7 @@ func TestTerraformIAMGetRoleTestFrameWork(t *testing.T) {
 
 func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 	log.Println("Verify aws_iam_role.aws_iam_role.codebuild_role")
-	coverage.MarkAsCovered("aws_iam_role.codebuild_role", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role.codebuild_role", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.GetRoleInput{
@@ -190,13 +165,13 @@ func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 
 func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	log.Println("Verify policies for test framework role ")
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-cloudwatch", moduleName)
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-codebuild", moduleName)
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-codedeploy", moduleName)
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-ec2", moduleName)
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-execution", moduleName)
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-ssm", moduleName)
-	coverage.MarkAsCovered("aws_iam_role_policy_attachment.role-s3", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-cloudwatch", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-codebuild", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-codedeploy", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-ec2", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-execution", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-ssm", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-s3", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
 	input := &iam.ListAttachedRolePoliciesInput{
@@ -211,15 +186,15 @@ func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	for _, policyName := range result.AttachedPolicies {
 		log.Printf("Verify policy %s for test framework role is attached", *policyName.PolicyName)
 		policyList = append(policyList, *policyName.PolicyName)
-		assert.True(t, contains(pname, *policyName.PolicyName), fmt.Sprintf("Policy name %s not attached", *policyName.PolicyName))
+		assert.True(t, tolunacommons.ListContains(pname, *policyName.PolicyName), fmt.Sprintf("Policy name %s not attached", *policyName.PolicyName))
 	}
 	for _, policyName := range pname {
-		assert.True(t, contains(policyList, policyName), fmt.Sprintf("Policy name %s should not attached", policyName))
+		assert.True(t, tolunacommons.ListContains(policyList, policyName), fmt.Sprintf("Policy name %s should not attached", policyName))
 	}
 }
 
 func TestRolePoliciesCodeBuildRole(t *testing.T) {
-	coverage.MarkAsCovered("aws_iam_role_policy.codebuild_policy", moduleName)
+	tolunacoverage.MarkAsCovered("aws_iam_role_policy.codebuild_policy", moduleName)
 	log.Println("Verify policies for codebuild role ")
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := iam.New(sess)
@@ -257,7 +232,7 @@ func TestRolePoliciesCodeBuildRole(t *testing.T) {
 }
 
 func TestCodeBuildTestReportsProject(t *testing.T) {
-	coverage.MarkAsCovered("aws_codebuild_project.tests_reports", moduleName)
+	tolunacoverage.MarkAsCovered("aws_codebuild_project.tests_reports", moduleName)
 	log.Println("Verify codebuild project is created")
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	svc := codebuild.New(sess)
@@ -277,9 +252,9 @@ func TestCodeBuildTestReportsProject(t *testing.T) {
 
 func TestCodeBuildTestReportsGroups(t *testing.T) {
 	log.Println("Verify codebuild report groups are created")
-	coverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my-env']", moduleName)
-	coverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my-env']", moduleName)
-	coverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my-env']", moduleName)
+	tolunacoverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my-env']", moduleName)
+	tolunacoverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my-env']", moduleName)
+	tolunacoverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my-env']", moduleName)
 	sess, err := aws_terratest.NewAuthenticatedSession(region)
 	if err != nil {
 		assert.Nil(t, err, "Failed to get Report group")
@@ -292,7 +267,7 @@ func TestCodeBuildTestReportsGroups(t *testing.T) {
 	for _, reportGroupName := range result.ReportGroups {
 		groupName := strings.Split(*reportGroupName, "/")
 		if strings.HasPrefix(groupName[1], "my-app") {
-			assert.True(t, contains(reportList, groupName[1]), fmt.Sprintf("Report group %s not created", groupName[1]))
+			assert.True(t, tolunacommons.ListContains(reportList, groupName[1]), fmt.Sprintf("Report group %s not created", groupName[1]))
 		}
 	}
 }
@@ -305,14 +280,4 @@ func TestCleanUp(t *testing.T) {
 type ExampleFunctionPayload struct {
 	DeploymentId                  string
 	LifecycleEventHookExecutionId string
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
 }
