@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.40.56
 	github.com/gruntwork-io/terratest v0.40.6
 	github.com/stretchr/testify v1.7.1
-	github.com/toluna-terraform/terraform-test-library v0.3.4
+	github.com/toluna-terraform/terraform-test-library v0.4.7
 )
 
 require (
