@@ -3,21 +3,19 @@ package test
 import (
 	"fmt"
 	"log"
-	"net/url"
 	"strings"
 	"testing"
 
-	aws "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/codebuild"
-	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	aws_terratest "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/assert"
+	tolunacodebuildaws "github.com/toluna-terraform/terraform-test-library/modules/aws/codebuild"
+	tolunaliamaws "github.com/toluna-terraform/terraform-test-library/modules/aws/iam"
+	tolunalambdaaws "github.com/toluna-terraform/terraform-test-library/modules/aws/lambda"
+	tolunas3aws "github.com/toluna-terraform/terraform-test-library/modules/aws/s3"
 	tolunacommons "github.com/toluna-terraform/terraform-test-library/modules/commons"
 	tolunacoverage "github.com/toluna-terraform/terraform-test-library/modules/coverage"
-	tolunas3aws "github.com/toluna-terraform/terraform-test-library/modules/toluna_aws"
 )
 
 var expectedAppName = fmt.Sprintf("terratest-test-framework-%s", random.UniqueId())
@@ -119,16 +117,7 @@ func TestTerraformInvokeRunnerLambda(t *testing.T) {
 func TestTerraformRunnerLambdaLayer(t *testing.T) {
 	log.Println("Verify test-runner Lambda layer")
 	tolunacoverage.MarkAsCovered("aws_lambda_layer_version.lambda_layer", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := lambda.New(sess)
-	input := &lambda.GetLayerVersionInput{
-		LayerName:     aws.String("postman"),
-		VersionNumber: aws.Int64(1),
-	}
-	result, err := svc.GetLayerVersion(input)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get layer")
-	}
+	result := tolunalambdaaws.GetLambdaLayer(t, region, "postman", 1)
 	assert.True(t, strings.HasSuffix(*result.LayerArn, "layer:postman"), "Wrong Layer ARN returned")
 	assert.True(t, strings.HasSuffix(*result.LayerVersionArn, "layer:postman:1"), "Wrong Version ARN returned")
 }
@@ -136,31 +125,13 @@ func TestTerraformRunnerLambdaLayer(t *testing.T) {
 func TestTerraformIAMGetRoleTestFrameWork(t *testing.T) {
 	log.Println("Verify aws_iam_role.test_framework")
 	tolunacoverage.MarkAsCovered("aws_iam_role.test_framework", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := iam.New(sess)
-	input := &iam.GetRoleInput{
-		RoleName: aws.String("my-app_non-prod_test_framework"),
-	}
-	result, err := svc.GetRole(input)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Role")
-	}
-	assert.True(t, strings.HasSuffix(*result.Role.Arn, "my-app_non-prod_test_framework"), "Wrong role ARN returned")
+	tolunaliamaws.VerifyIAMRoleExists(t, region, "my-app_non-prod_test_framework")
 }
 
 func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 	log.Println("Verify aws_iam_role.aws_iam_role.codebuild_role")
 	tolunacoverage.MarkAsCovered("aws_iam_role.codebuild_role", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := iam.New(sess)
-	input := &iam.GetRoleInput{
-		RoleName: aws.String("role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod"),
-	}
-	result, err := svc.GetRole(input)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Role")
-	}
-	assert.True(t, strings.HasSuffix(*result.Role.Arn, "role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod"), "Wrong role ARN returned")
+	tolunaliamaws.VerifyIAMRoleExists(t, region, "aaarole-my-app-non-prod-codebuild-publish-reports-my-app-non-prod")
 }
 
 func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
@@ -172,82 +143,36 @@ func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
 	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-execution", moduleName)
 	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-lambda-ssm", moduleName)
 	tolunacoverage.MarkAsCovered("aws_iam_role_policy_attachment.role-s3", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := iam.New(sess)
-	input := &iam.ListAttachedRolePoliciesInput{
-		RoleName: aws.String("my-app_non-prod_test_framework"),
-	}
-	result, err := svc.ListAttachedRolePolicies(input)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Role")
-	}
-	policyList := []string{}
-	pname := []string{"AWSLambdaBasicExecutionRole", "AmazonSSMReadOnlyAccess", "CloudWatchFullAccess", "AWSCodeDeployFullAccess", "AWSCodeBuildDeveloperAccess", "AmazonS3FullAccess", "ElasticLoadBalancingReadOnly"}
-	for _, policyName := range result.AttachedPolicies {
-		log.Printf("Verify policy %s for test framework role is attached", *policyName.PolicyName)
-		policyList = append(policyList, *policyName.PolicyName)
-		assert.True(t, tolunacommons.ListContains(pname, *policyName.PolicyName), fmt.Sprintf("Policy name %s not attached", *policyName.PolicyName))
-	}
-	for _, policyName := range pname {
-		assert.True(t, tolunacommons.ListContains(policyList, policyName), fmt.Sprintf("Policy name %s should not attached", policyName))
-	}
+	policy_names := []string{"AWSLambdaBasicExecutionRole", "AmazonSSMReadOnlyAccess", "CloudWatchFullAccess", "AWSCodeDeployFullAccess", "AWSCodeBuildDeveloperAccess", "AmazonS3FullAccess", "ElasticLoadBalancingReadOnly"}
+	tolunaliamaws.VerifyAttachedPoliciesForRole(t, region, "aaamy-app_non-prod_test_framework", policy_names)
 }
 
 func TestRolePoliciesCodeBuildRole(t *testing.T) {
 	tolunacoverage.MarkAsCovered("aws_iam_role_policy.codebuild_policy", moduleName)
 	log.Println("Verify policies for codebuild role ")
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := iam.New(sess)
-	input := &iam.GetRolePolicyInput{
-		RoleName:   aws.String("role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod"),
-		PolicyName: aws.String("policy-codebuild-publish-reports-my-app-non-prod"),
-	}
-	result, err := svc.GetRolePolicy(input)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Policy")
-	}
-	encodedValue := *result.PolicyDocument
-	decodedValue, err := url.QueryUnescape(encodedValue)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Policy")
-	}
 	expectedPolicy := strings.ReplaceAll(`{
-	"Version":"2012-10-17",
-	"Statement":[
-		{
-			"Sid":"",
-			"Effect":"Allow",
-			"Action":[
-				"ssm:*",
-				"s3:*",
-				"logs:*",
-				"codebuild:*"
-			],
-			"Resource":"*"
-		}
-		]
-	}`, "\t", "")
-	decodedPolicy := strings.ReplaceAll(decodedValue, " ", "")
-	assert.Equal(t, expectedPolicy, decodedPolicy, fmt.Sprintf("Policy document %s does not match expected document", expectedPolicy))
+		"Version":"2012-10-17",
+		"Statement":[
+			{
+				"Sid":"",
+				"Effect":"Allow",
+				"Action":[
+					"ssm:*",
+					"s3:*",
+					"logs:*",
+					"codebuild:*"
+				],
+				"Resource":"*"
+			}
+			]
+		}`, "\t", "")
+	tolunaliamaws.VerifyRolePolicies(t, region, expectedPolicy, "role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod", "policy-codebuild-publish-reports-my-app-non-prod")
 }
 
 func TestCodeBuildTestReportsProject(t *testing.T) {
 	tolunacoverage.MarkAsCovered("aws_codebuild_project.tests_reports", moduleName)
 	log.Println("Verify codebuild project is created")
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	svc := codebuild.New(sess)
-	input := &codebuild.ListProjectsInput{}
-	result, err := svc.ListProjects(input)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Policy")
-	}
-	projectFound := false
-	for _, projectName := range result.Projects {
-		if *projectName == "codebuild-publish-reports-my-app-non-prod" {
-			projectFound = true
-		}
-	}
-	assert.True(t, projectFound, fmt.Sprintf("Project %s not created", "codebuild-publish-reports-my-app-non-prod"))
+	tolunacodebuildaws.VerifyCodeBuildProject(t, region, "codebuild-publish-reports-my-app-non-prod")
 }
 
 func TestCodeBuildTestReportsGroups(t *testing.T) {
@@ -255,21 +180,8 @@ func TestCodeBuildTestReportsGroups(t *testing.T) {
 	tolunacoverage.MarkAsCovered("aws_codebuild_report_group.CodeCoverageReport['my-env']", moduleName)
 	tolunacoverage.MarkAsCovered("aws_codebuild_report_group.IntegrationTestReport['my-env']", moduleName)
 	tolunacoverage.MarkAsCovered("aws_codebuild_report_group.TestReport['my-env']", moduleName)
-	sess, err := aws_terratest.NewAuthenticatedSession(region)
-	if err != nil {
-		assert.Nil(t, err, "Failed to get Report group")
-	}
-	svc := codebuild.New(sess)
-	input := &codebuild.ListReportGroupsInput{}
-	result, err := svc.ListReportGroups(input)
 	reportList := []string{"my-app-my-env-CodeCoverageReport", "my-app-my-env-IntegrationTestReport", "my-app-my-env-TestReport"}
-
-	for _, reportGroupName := range result.ReportGroups {
-		groupName := strings.Split(*reportGroupName, "/")
-		if strings.HasPrefix(groupName[1], "my-app") {
-			assert.True(t, tolunacommons.ListContains(reportList, groupName[1]), fmt.Sprintf("Report group %s not created", groupName[1]))
-		}
-	}
+	tolunacodebuildaws.VerifyCodeBuildReportsGroups(t, region, reportList, "my-app")
 }
 
 func TestCleanUp(t *testing.T) {
