@@ -131,7 +131,7 @@ func TestTerraformIAMGetRoleTestFrameWork(t *testing.T) {
 func TestTerraformIAMGetRoleCodebuild(t *testing.T) {
 	log.Println("Verify aws_iam_role.aws_iam_role.codebuild_role")
 	tolunacoverage.MarkAsCovered("aws_iam_role.codebuild_role", moduleName)
-	tolunaliamaws.VerifyIAMRoleExists(t, region, "role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod")
+	tolunaliamaws.VerifyIAMRoleExists(t, region, "role-codebuild-publish-reports-my-app-non-prod")
 }
 
 func TestAttachedPoliciesTestFrameworkRole(t *testing.T) {
@@ -166,7 +166,7 @@ func TestRolePoliciesCodeBuildRole(t *testing.T) {
 			}
 			]
 		}`, "\t", "")
-	tolunaliamaws.VerifyRolePolicies(t, region, expectedPolicy, "role-my-app-non-prod-codebuild-publish-reports-my-app-non-prod", "policy-codebuild-publish-reports-my-app-non-prod")
+	tolunaliamaws.VerifyRolePolicies(t, region, expectedPolicy, "role-codebuild-publish-reports-my-app-non-prod", "policy-codebuild-publish-reports-my-app-non-prod")
 }
 
 func TestCodeBuildTestReportsProject(t *testing.T) {
