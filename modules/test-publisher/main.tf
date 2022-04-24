@@ -42,7 +42,7 @@ resource "aws_codebuild_project" "tests_reports" {
 }
 
 resource "aws_iam_role" "codebuild_role" {
-  name = "role-${var.app_name}-${var.env_type}-${local.codebuild_name}"
+  name = "role-${local.codebuild_name}"
   assume_role_policy = data.aws_iam_policy_document.codebuild_assume_role_policy.json
 }
 
