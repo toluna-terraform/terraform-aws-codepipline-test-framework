@@ -12,8 +12,7 @@ phases:
       commands:
         - yum install -y yum-utils
         - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-        - yum -y install terraform
-        - yum install -y yum-utils consul
+        - yum -y install terraform consul
         - export CONSUL_HTTP_ADDR=https://consul-cluster-test.consul.$CONSUL_PROJECT_ID.aws.hashicorp.cloud
         - REPORT_URL="https://console.aws.amazon.com/codesuite/codebuild/testReports/reportGroups/$APP_NAME-$ENV_NAME-IntegrationTestReport"
         - COMMIT_ID=$(consul kv get "infra/$APP_NAME-$ENV_NAME/commit_id")
