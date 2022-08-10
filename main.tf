@@ -11,13 +11,19 @@ module "test_reports" {
   ]
 }
 
-module "test_runner" {
-  source = "./modules/test-runner"
+module "integration_runner" {
+  source = "./modules/integration-runner"
   app_name = var.app_name
   env_type = var.env_type
   postman_collections = var.postman_collections
 }
 
+module "stress_runner" {
+  source = "./modules/stress-runner"
+  app_name = var.app_name
+  env_type = var.env_type
+  jmx_file_path = var.jmx_file_path
+}
 
 resource "aws_codebuild_report_group" "TestReport" {
   for_each = toset(var.app_envs)
@@ -42,6 +48,16 @@ resource "aws_codebuild_report_group" "CodeCoverageReport" {
 resource "aws_codebuild_report_group" "IntegrationTestReport" {
   for_each = toset(var.app_envs)
   name = "${var.app_name}-${each.key}-IntegrationTestReport"
+  type = "TEST"
+  delete_reports = true
+  export_config {
+    type = "NO_EXPORT"
+  }
+}
+
+resource "aws_codebuild_report_group" "StreesTestReport" {
+  for_each = toset(var.app_envs)
+  name = "${var.app_name}-${each.key}-StressTestReport"
   type = "TEST"
   delete_reports = true
   export_config {
