@@ -42,7 +42,7 @@ resource "aws_codebuild_project" "stress_runner" {
 
 resource "aws_iam_role" "stress_role" {
   name = "role-${local.codebuild_name}"
-  assume_role_policy = data.aws_iam_policy_document.stress_assume_role_policy.json
+  assume_role_policy = data.aws_iam_policy_document.stress_codebuild_assume_role_policy.json
 }
 
 resource "aws_iam_role_policy" "stress_policy" {

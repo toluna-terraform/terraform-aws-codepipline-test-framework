@@ -7,7 +7,7 @@ module "test_reports" {
   privileged_mode                       = true
   environment_variables_parameter_store = var.environment_variables_parameter_store
   depends_on = [
-    module.test_runner
+    module.integration_runner,module.stress_runner
   ]
 }
 

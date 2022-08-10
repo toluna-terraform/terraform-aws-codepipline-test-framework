@@ -5,14 +5,6 @@
   type = string
 }
 
-variable "codebuild_name" {
-    type = string
-  
-}
-  variable "s3_bucket" {
-     type     = string
- }
-
 variable "environment_variables" {
   default = {}  
   type        = map(string)

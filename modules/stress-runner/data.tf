@@ -1,4 +1,4 @@
-data "aws_iam_policy_document" "stress_assume_role_policy" {
+data "aws_iam_policy_document" "stress_codebuild_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -24,7 +24,7 @@ data "aws_ssm_parameter" "stress_connection_arn" {
   name = "/infra/codepipeline/connection_arn"
 }
 
-data "aws_iam_policy_document" "stress_assume_role_policy" {
+data "aws_iam_policy_document" "stress_codepipeline_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
