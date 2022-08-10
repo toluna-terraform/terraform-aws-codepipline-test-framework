@@ -19,8 +19,7 @@ phases:
       - chmod +x -R /root/apache-jmeter-${jmeter_version}
       - $JMETER_HOME/bin/jmeter -v
       - | 
-        echo '
-        <?xml version="1.0"?>
+        echo '<?xml version="1.0"?>
         <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
           <xsl:output method="xml" indent="yes" encoding="UTF-8"/>
           <xsl:template match="/testResults">
