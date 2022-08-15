@@ -105,8 +105,10 @@ phases:
   post_build:
     commands:
       - xsltproc -o report.xml jtl2junit.xsl /tmp/${app_name}-${env_type}.xml
+      - aws lambda invoke --function-name ${app_name}-${env_type}-test-framework-manager --invocation-type Event --payload '{ "hookId": "$HOOK_ID", "deploymentId": "$DEPLOYMENT_ID","UpdateReport": true, StressResults: true }' 
 reports:
   $REPORT_GROUP:
     files:
       - 'report.xml'
     file-format: JunitXml    
+
