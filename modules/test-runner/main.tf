@@ -76,7 +76,7 @@ resource "aws_s3_bucket_policy" "postman_bucket" {
 resource "aws_lambda_layer_version" "lambda_layer" {
   filename   = "${path.module}/layer/layer.zip"
   layer_name = "postman"
-  compatible_runtimes = ["nodejs16.x"]
+  compatible_runtimes = ["nodejs14.x"]
   source_code_hash = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
@@ -85,7 +85,7 @@ resource "aws_lambda_function" "test_framework" {
   function_name = "${var.app_name}-${var.env_type}-test-framework"
   role          = aws_iam_role.test_framework.arn
   handler       = "test_framework.handler"
-  runtime       = "nodejs16.x"
+  runtime       = "nodejs14.x"
   layers = [aws_lambda_layer_version.lambda_layer.arn]
   timeout       = 180
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
