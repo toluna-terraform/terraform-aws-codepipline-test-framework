@@ -76,16 +76,16 @@ resource "aws_s3_bucket_policy" "postman_bucket" {
 resource "aws_lambda_layer_version" "lambda_layer" {
   filename   = "${path.module}/layer/layer.zip"
   layer_name = "postman"
-  compatible_runtimes = ["nodejs12.x"]
+  compatible_runtimes = ["nodejs16.x"]
   source_code_hash = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
-resource "aws_lambda_function" "test_framework" {
+resource "aws_lambda_function" "integration_runner" {
   filename      = "${path.module}/lambda/lambda.zip"
-  function_name = "${var.app_name}-${var.env_type}-test-framework"
+  function_name = "${var.app_name}-${var.env_type}-integration-runner"
   role          = aws_iam_role.test_framework.arn
-  handler       = "test_framework.handler"
-  runtime       = "nodejs12.x"
+  handler       = "integration_runner.handler"
+  runtime       = "nodejs16.x"
   layers = [aws_lambda_layer_version.lambda_layer.arn]
   timeout       = 180
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
@@ -102,63 +102,5 @@ resource "aws_lambda_function" "test_framework" {
     ]
 }
 
-# IAM
-resource "aws_iam_role" "test_framework" {
-  name = "${var.app_name}_${var.env_type}_test_framework"
 
-  assume_role_policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": [
-          "s3.amazonaws.com",
-          "codedeploy.amazonaws.com",
-          "codebuild.amazonaws.com",
-          "lambda.amazonaws.com"
-        ]
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-POLICY
-}
 
-resource "aws_iam_role_policy_attachment" "role-lambda-execution" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy_attachment" "role-lambda-ssm" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-cloudwatch" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-codedeploy" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-codebuild" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-s3" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-ec2" {
-    role       = "${aws_iam_role.test_framework.name}"
-    policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
-}

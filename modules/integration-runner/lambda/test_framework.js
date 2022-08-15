@@ -138,13 +138,16 @@ exports.handler = async function (event, context, callback) {
         }
       }
     }
-    
-    await updateRunner(deploymentId, combinedRunner, event, error);
+    //update the test manage 
+    updateTestManager(deploymentId, combinedRunner, event, true);
   } catch (e) {
-    await updateRunner(deploymentId, combinedRunner, event, true);
-    throw e;
+    //update the test manage with error
+    updateTestManager(deploymentId, combinedRunner, event, true);
   }
-  if (error) throw error; // Cause the lambda to "fail"
+  if (error) {
+    //update the test manage with error
+    updateTestManager(deploymentId, combinedRunner, event, true);
+  }
 };
 
 async function uploadReports (environment,deploymentId) {
@@ -298,30 +301,6 @@ async function runTest (postmanCollection, postmanEnvironment,environment,deploy
   } catch (err) {
     console.log(err);
     throw err;
-  }
-}
-
-async function updateRunner (deploymentId, combinedRunner, event, error) {
-  if (deploymentId) {
-    console.log('starting to update CodeDeploy lifecycle event hook status...');
-    const params = {
-      deploymentId: deploymentId,
-      lifecycleEventHookExecutionId: event.LifecycleEventHookExecutionId,
-      status: error ? 'Failed' : 'Succeeded'
-    };
-    try {
-      const data = await cd.putLifecycleEventHookExecutionStatus(params).promise();
-      console.log(data);
-    } catch (err) {
-      console.log(err, err.stack);
-      throw err;
-    }
-  } else if (combinedRunner) {
-    return {
-      passed: !error
-    };
-  } else {
-    console.log('No deployment ID found in the event. Skipping update to CodeDeploy lifecycle hook...');
   }
 }
 
