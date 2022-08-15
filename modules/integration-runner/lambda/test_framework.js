@@ -21,6 +21,7 @@ let environment;
 let lb_env_name;
 
 exports.handler = async function (event, context, callback) {
+   // at end if run integration = true continue else complete tests
   console.log('event', event);
   const deploymentId = event.DeploymentId;
   const combinedRunner = event.Combined;

@@ -12,6 +12,8 @@ exports.handler = async function (event, context, callback) {
   console.log('event', event);
   const deploymentId = event.DeploymentId;
   const combinedRunner = event.Combined;
+
+  // at end complete tests
   if (deploymentId) {
     console.log(`After stress tests are complete, this will update the CodeDeploy deployment ${deploymentId}.`);
   } else if (combinedRunner) {
