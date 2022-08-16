@@ -18,6 +18,10 @@ variable "environment_variables_parameter_store" {
  }
 }
 
+variable "role" {
+  type = string
+}
+
 variable "privileged_mode" { 
     type        = bool
     default     = true

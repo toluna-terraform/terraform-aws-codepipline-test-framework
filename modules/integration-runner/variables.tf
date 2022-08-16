@@ -6,10 +6,9 @@ variable "app_name" {
   type = string
 }
 
-variable "alb_wait_time" {
-  type        = number
-  description = "The number of seconds the Lambda function should wait for the new ALB target group to initialize before running tests."
-  default     = 10
+variable "environment_variables" {
+  default = {}  
+  type        = map(string)
 }
 
 variable "postman_collections" {
@@ -38,8 +37,6 @@ variable "vpc_id" {
   default     = null
 }
 
-variable "test_env_var_overrides" {
-  type        = map(string)
-  description = "Values to set or override in the Postman test environment."
-  default     = {}
+variable "role" {
+  type = string
 }

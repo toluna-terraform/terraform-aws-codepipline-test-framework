@@ -1,27 +1,12 @@
-module "test_reports" {
-  source                                = "./modules/test-publisher"
-  app_name                              = var.app_name
-  env_type                              = var.env_type
+module "test_framework_manager" {
+  source = "./modules/test-framework-manager"
+  app_name = var.app_name
+  env_type = var.env_type
   codebuild_name                        = "tests-reports-${var.app_name}"
   s3_bucket                             = "${var.app_name}-${var.env_type}-postman-tests"
   privileged_mode                       = true
   environment_variables_parameter_store = var.environment_variables_parameter_store
-  depends_on = [
-    module.integration_runner,module.stress_runner
-  ]
-}
-
-module "integration_runner" {
-  source = "./modules/integration-runner"
-  app_name = var.app_name
-  env_type = var.env_type
   postman_collections = var.postman_collections
-}
-
-module "stress_runner" {
-  source = "./modules/stress-runner"
-  app_name = var.app_name
-  env_type = var.env_type
   jmx_file_path = var.jmx_file_path
 }
 

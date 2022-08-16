@@ -17,15 +17,13 @@ locals {
   ])
   using_local_files = length(local.local_collections) + length(local.local_environments) > 0
   lambda_env_variables = {
-    ALB_WAIT_TIME          = var.alb_wait_time
     S3_BUCKET              = local.using_local_files ? aws_s3_bucket.postman_bucket.bucket : null
     POSTMAN_COLLECTIONS    = jsonencode(var.postman_collections)
     APP_NAME               = var.app_name
     ENV_TYPE               = var.env_type
-    TEST_ENV_VAR_OVERRIDES = jsonencode(var.test_env_var_overrides)
+    TEST_ENV_VAR_OVERRIDES = var.environment_variables
   }
   lambda_function_name = "${var.app_name}-postman-tests"
-  using_vpc_config     = length(var.vpc_subnet_ids) > 0
 }
 
 resource "aws_s3_bucket" "postman_bucket" {
@@ -73,7 +71,7 @@ resource "aws_s3_bucket_policy" "postman_bucket" {
     ]
 }
 
-resource "aws_lambda_layer_version" "lambda_layer" {
+resource "aws_lambda_layer_version" "lambda_layer_integration" {
   filename   = "${path.module}/layer/layer.zip"
   layer_name = "postman"
   compatible_runtimes = ["nodejs16.x"]
@@ -83,17 +81,17 @@ resource "aws_lambda_layer_version" "lambda_layer" {
 resource "aws_lambda_function" "integration_runner" {
   filename      = "${path.module}/lambda/lambda.zip"
   function_name = "${var.app_name}-${var.env_type}-integration-runner"
-  role          = aws_iam_role.test_framework.arn
+  role          = var.role
   handler       = "integration_runner.handler"
   runtime       = "nodejs16.x"
-  layers = [aws_lambda_layer_version.lambda_layer.arn]
+  layers = [aws_lambda_layer_version.lambda_layer_integration.arn]
   timeout       = 180
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
   environment {
-    variables = local.lambda_env_variables
+    variables = var.environment_variables
   }
   depends_on = [
-    aws_lambda_layer_version.lambda_layer,
+    aws_lambda_layer_version.lambda_layer_integration,
     aws_s3_bucket.postman_bucket,
     aws_s3_bucket_acl.postman_bucket,
     aws_s3_bucket_versioning.postman_bucket,

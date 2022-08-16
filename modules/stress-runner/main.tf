@@ -1,12 +1,19 @@
 locals{
     codebuild_name        = "codebuild-stress-runner-${var.app_name}-${var.env_type}" 
+    lambda_env_variables = {
+    APP_NAME               = var.app_name
+    ENV_TYPE               = var.env_type
+    JMX_FILE_PATH          = var.jmx_file_path
+    JMETER_VERSION         = var.jmeter_version
+    TEST_ENV_VAR_OVERRIDES = var.environment_variables
+  }
 }
 
 resource "aws_codebuild_project" "stress_runner" {
   name          = "${local.codebuild_name}"
   description   = "Build spec for ${local.codebuild_name}"
   build_timeout = "120"
-  service_role  = aws_iam_role.stress_role.arn
+  service_role  = var.role
 
   artifacts {
     type = "NO_ARTIFACTS"
@@ -40,15 +47,27 @@ resource "aws_codebuild_project" "stress_runner" {
     })
 }
 
-resource "aws_iam_role" "stress_role" {
-  name = "role-${local.codebuild_name}"
-  assume_role_policy = data.aws_iam_policy_document.stress_codebuild_assume_role_policy.json
+
+resource "aws_lambda_layer_version" "lambda_layer_stress" {
+  filename            = "${path.module}/layer/layer.zip"
+  layer_name          = "postman"
+  compatible_runtimes = ["nodejs16.x"]
+  source_code_hash    = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
-resource "aws_iam_role_policy" "stress_policy" {
-  name = "policy-${local.codebuild_name}"
-  role = aws_iam_role.stress_role.id
-  policy = data.aws_iam_policy_document.stress_role_policy.json
+resource "aws_lambda_function" "stress_runner" {
+  filename         = "${path.module}/lambda/lambda.zip"
+  function_name    = "${var.app_name}-${var.env_type}-stress-runner"
+  role             = var.role
+  handler          = "stress_runner.handler"
+  runtime          = "nodejs16.x"
+  layers           = [aws_lambda_layer_version.lambda_layer_stress.arn]
+  timeout          = 180
+  source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
+  environment {
+    variables = var.environment_variables
+  }
+  depends_on = [
+    aws_lambda_layer_version.lambda_layer_stress,
+  ]
 }
-
-

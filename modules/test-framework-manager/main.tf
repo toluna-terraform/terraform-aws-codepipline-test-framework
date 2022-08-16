@@ -1,5 +1,4 @@
 locals {
-  using_local_files = length(local.local_collections) + length(local.local_environments) > 0
   codebuild_name    = "codebuild-publish-reports-${var.app_name}-${var.env_type}"
   codepipeline_name = "codepipeline-publish-reports-${var.app_name}-${var.env_type}"
   lambda_env_variables = {
@@ -7,7 +6,6 @@ locals {
     ENV_TYPE               = var.env_type
     TEST_ENV_VAR_OVERRIDES = jsonencode(var.test_env_var_overrides)
   }
-  using_vpc_config = length(var.vpc_subnet_ids) > 0
 }
 
 resource "aws_lambda_layer_version" "lambda_layer" {
@@ -19,9 +17,9 @@ resource "aws_lambda_layer_version" "lambda_layer" {
 
 resource "aws_lambda_function" "test_framework" {
   filename         = "${path.module}/lambda/lambda.zip"
-  function_name    = "${var.app_name}-${var.env_type}-test-framework"
+  function_name    = "${var.app_name}-${var.env_type}-test-framework-manager"
   role             = aws_iam_role.test_framework.arn
-  handler          = "test_framework.handler"
+  handler          = "test_framework_manager.handler"
   runtime          = "nodejs16.x"
   layers           = [aws_lambda_layer_version.lambda_layer.arn]
   timeout          = 180
@@ -62,7 +60,7 @@ POLICY
 
 resource "aws_iam_role_policy_attachment" "role-lambda-execution" {
   role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
 }
 
 resource "aws_iam_role_policy_attachment" "role-lambda-ssm" {
@@ -82,7 +80,7 @@ resource "aws_iam_role_policy_attachment" "role-codedeploy" {
 
 resource "aws_iam_role_policy_attachment" "role-codebuild" {
   role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess"
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "role-s3" {
@@ -142,4 +140,22 @@ resource "aws_iam_role_policy" "codebuild_policy" {
   name = "policy-${local.codebuild_name}"
   role = aws_iam_role.codebuild_role.id
   policy = data.aws_iam_policy_document.codebuild_role_policy.json
+}
+
+module "integration_runner" {
+  source = "../integration-runner"
+  app_name = var.app_name
+  env_type = var.env_type
+  role     = aws_iam_role.test_framework.arn
+  postman_collections = var.postman_collections
+  environment_variables = local.lambda_env_variables
+}
+
+module "stress_runner" {
+  source = "../stress-runner"
+  app_name = var.app_name
+  env_type = var.env_type
+  role     = aws_iam_role.test_framework.arn
+  jmx_file_path = var.jmx_file_path
+  environment_variables = local.lambda_env_variables
 }

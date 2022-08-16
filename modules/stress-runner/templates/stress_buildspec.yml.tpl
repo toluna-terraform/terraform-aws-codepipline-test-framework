@@ -105,7 +105,8 @@ phases:
   post_build:
     commands:
       - xsltproc -o report.xml jtl2junit.xsl /tmp/${app_name}-${env_type}.xml
-      - aws lambda invoke --function-name ${app_name}-${env_type}-test-framework-manager --invocation-type Event --payload '{ "hookId": "$HOOK_ID", "deploymentId": "$DEPLOYMENT_ID","UpdateReport": true, StressResults: true }' 
+      - echo "Need to parse result and set StressResults"
+      - aws lambda invoke --function-name poc-ecs-dotnet-non-prod-test-framework-manager --invocation-type Event --payload '{ "hookId":"$HOOK_ID", "deploymentId":"$DEPLOYMENT_ID","UpdateReport":true, "StressResults":true }' /dev/null
 reports:
   $REPORT_GROUP:
     files:

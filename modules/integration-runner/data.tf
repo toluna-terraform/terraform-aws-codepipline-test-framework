@@ -4,7 +4,7 @@ data "aws_iam_policy_document" "postman_bucket" {
   statement {
     principals {
       type        = "AWS"
-      identifiers = ["${aws_iam_role.test_framework.arn}"]
+      identifiers = ["${var.role}"]
     }
 
     actions = [
