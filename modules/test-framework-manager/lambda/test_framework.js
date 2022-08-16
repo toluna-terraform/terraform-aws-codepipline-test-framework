@@ -11,7 +11,8 @@ let integration_report_group_arn;
 let stress_report_group_arn;
 let environment;
 let lb_env_name;
-
+let runIntegrationTests;
+let runStressTests;
 exports.handler = async function (event, context, callback) {
   console.log('event', event);
   const deploymentId = event.DeploymentId;
@@ -19,8 +20,8 @@ exports.handler = async function (event, context, callback) {
   const combinedRunner = event.Combined;
   const IntegResults = event.IntegResults
   const StressResults = event.StressResults
-  var runIntegrationTests = getConsulConfig().runIntegrationTests
-  var runStressTests = getConsulConfig().runStressTests
+  runIntegrationTests = getConsulConfig().runIntegrationTests
+  runStressTests = getConsulConfig().runStressTests
   if (!runIntegrationTests) {
     IntegResults = true
   }
