@@ -1,8 +1,10 @@
 const AWS = require('aws-sdk');
+const Consul = require('consul');
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cb = new AWS.CodeBuild({ apiVersion: '2016-10-06', region: 'us-east-1' });
 const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
 const lambda = AWS.Lambda({ apiVersion: '2015-03-31' });
+const ssm = new AWS.SSM({apiVersion: '2014-11-06',region: 'us-east-1'});
 
 let lb_dns_name;
 let integration_report_group_arn;
@@ -17,13 +19,15 @@ exports.handler = async function (event, context, callback) {
   const combinedRunner = event.Combined;
   const IntegResults = event.IntegResults
   const StressResults = event.StressResults
+  var runIntegrationTests = getConsulConfig().runIntegrationTests
+  var runStressTests = getConsulConfig().runStressTests
   if (!runIntegrationTests) {
     IntegResults = true
   }
   if (!runStressTests) {
     StressResults = true
   }
-  if (event.hasOwnProperty('UpdateReport')) {
+  if (event.UpdateReport) {
     if (IntegResults && StressResults) {
       await updateRunner(deploymentId, combinedRunner, event, false);
     }
@@ -186,6 +190,60 @@ async function updateRunner(deploymentId, combinedRunner, event, error) {
     console.log('No deployment ID found in the event. Skipping update to CodeDeploy lifecycle hook...');
   }
 }
+
+function getConsulConfig(){
+  let CONSUL_ADDRESS;
+  let CONSUL_TOKEN;
+  let configMap = {};
+  var params = {
+    Name: '/infra/consul_http_token', /* required */
+    WithDecryption: true
+  };
+  CONSUL_TOKEN = ssm.getParameter(params, function(err, data) {
+    if (err) console.log(err, err.stack); // an error occurred
+    else    {
+      response = JSON.parse(data)
+      return data.Parameter.Value
+    } 
+  });
+  var params = {
+    Name: '/infra/consul_project_id', /* required */
+    WithDecryption: true
+  };
+  CONSUL_ADDRESS = ssm.getParameter(params, function(err, data) {
+    if (err) console.log(err, err.stack); // an error occurred
+    else    {
+      response = JSON.parse(data)
+      return data.Parameter.Value
+    } 
+  });
+
+  const consul = new Consul({
+    host: `consul-cluster-test.consul.${CONSUL_ADDRESS}.aws.hashicorp.cloud`,
+    secure: true,
+    port: 443,
+    promisify: true,
+    defaults : { token: `${CONSUL_TOKEN}` }
+  });
+  consul.kv.get('terraform/poc-ecs-dotnet/app-env.json', function(err, result) {
+    if (err) throw err;
+    if (result === undefined) throw new Error('key not found');
+    app_json = JSON.parse(result.Value)
+    
+    if (app_json[`${process.env.ENV_NAME}`].run_stress_tests) {
+      configMap['run_stress_tests'] = app_json[`${process.env.ENV_NAME}`].run_stress_tests
+    } else {
+      configMap['run_stress_tests'] = false
+    }
+    if (app_json[`${process.env.ENV_NAME}`].run_integration_tests) {
+      configMap['run_integration_tests'] = app_json[`${process.env.ENV_NAME}`].run_integration_tests
+    } else {
+      configMap['run_integration_tests'] = false
+    }
+  });
+  return configMap;
+}
+
 
 function sleep(ms) {
   console.log('started sleep timer');
