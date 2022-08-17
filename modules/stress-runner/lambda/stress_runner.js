@@ -8,6 +8,8 @@ let hookId;
 let lb_dns_name;
 let environment;
 let report_group;
+let repo;
+let branch;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
@@ -16,7 +18,10 @@ exports.handler = function (event, context, callback) {
   hookId = event.hookId;
   lb_dns_name = event.lb_name;
   environment = event.environment;
-  report_group = event.report_group
+  report_group = event.report_group;
+  repo = event.repo;
+  branch = event.branch;
+
 
   if (deploymentId) {
     console.log(`After stress tests are complete, this will update the CodeDeploy deployment ${deploymentId}.`);
@@ -69,8 +74,10 @@ function runStressTests(environment, deploymentId) {
         value: `${hookId}`,
         type: 'PLAINTEXT'
       },
-
     ],
+    sourceVersion: `${branch}`,
+    sourceTypeOverride: "BITBUCKET",
+    sourceLocationOverride: `https://bitbucket.org/${repo}.git`
   };
   cb.startBuild(cbParams, function (err, data) {
     if (err) {

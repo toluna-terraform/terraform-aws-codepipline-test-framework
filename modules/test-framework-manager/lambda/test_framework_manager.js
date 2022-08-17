@@ -13,15 +13,21 @@ let environment;
 let lb_env_name;
 let runIntegrationTests;
 let runStressTests;
+let branch;
+let repo;
 exports.handler = async function (event, context, callback) {
   console.log('event', event);
   const deploymentId = event.DeploymentId;
   const lifecycleEventHookExecutionId = event.lifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
-  const IntegResults = event.IntegResults
-  const StressResults = event.StressResults
-  runIntegrationTests = getConsulConfig().runIntegrationTests
-  runStressTests = getConsulConfig().runStressTests
+  const IntegResults = event.IntegResults;
+  const StressResults = event.StressResults;
+
+  app_configuration = getConsulConfig();
+  runIntegrationTests = app_configuration.runIntegrationTests
+  runStressTests = app_configuration.runStressTests
+  branch = app_configuration.branch;
+  repo = app_configuration.repo;
   if (!runIntegrationTests) {
     IntegResults = true
   }
@@ -160,7 +166,7 @@ function runStressTest() {
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner"`,
     InvocationType: "Event",
-    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`, report_group: `${stress_report_group_arn}`, lb_name: `${lb_dns_name}` })
+    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,repo: `${repo}`, branch: `${branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${lb_dns_name}` })
   };
   lambda.invoke(params, function (err, data) {
     if (err) console.log(err, err.stack); // an error occurred
@@ -241,6 +247,8 @@ function getConsulConfig(){
     } else {
       configMap['run_integration_tests'] = false
     }
+    configMap['branch'] = app_json[`${process.env.ENV_NAME}`].pipeline_branch
+    configMap['repo'] = app_json[`${process.env.ENV_NAME}`].pipeline_repo
   });
   return configMap;
 }
