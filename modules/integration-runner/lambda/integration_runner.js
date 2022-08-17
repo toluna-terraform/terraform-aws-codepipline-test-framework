@@ -21,9 +21,9 @@ let environment;
 let report_group;
 let run_stress_tests;
 
-exports.handler = async function (event, context, callback) {
+exports.handler = function (event, context, callback) {
   console.log('event', event);
-  deploymentId = event.DeploymentId;
+  deploymentId = event.deploymentId;
   combinedRunner = event.Combined;
   hookId = event.hookId;
   lb_dns_name = event.lb_name;
@@ -39,14 +39,17 @@ exports.handler = async function (event, context, callback) {
     console.log('No DeploymentId found in event, this will execute the postman tests and then exit.');
   }
 
+  const timer = sleep(10000);
   // store the error so that we can update codedeploy lifecycle if there are any errors including errors from downloading files
   let error;
   try {
     const postmanCollections = process.env.POSTMAN_COLLECTIONS;
     if (!postmanCollections) {
       error = new Error('Env variable POSTMAN_COLLECTIONS is required');
+      throw error;
     } else {
       const postmanList = JSON.parse(postmanCollections);
+      const promises = [timer];
       //report_group_arns.forEach(item => console.log(item));
       for (const each of postmanList) {
         if (each.collection.includes('.json')) {
@@ -62,7 +65,7 @@ exports.handler = async function (event, context, callback) {
       }
 
       // make sure all files are downloaded and we wait for 10 seconds before executing postman tests
-      await Promise.all(promises);
+      Promise.all(promises);
 
       console.log('starting postman tests ...');
       if (!error) {
@@ -70,22 +73,22 @@ exports.handler = async function (event, context, callback) {
         for (const each of postmanList) {
           if (!error) {
             // don't run later collections if previous one errored out
-            await runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
+            runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
               error = err;
             });
           }
         }
       }
+      if (error) {
+        throw error;
+      }
     }
     if (!run_stress_tests) {
       updateTestManager(deploymentId, combinedRunner, event, error);
     }
-  } catch (e) {
+  } catch (error) {
     //update the test manage with error
-    updateTestManager(deploymentId, combinedRunner, event, true);
-  }
-  if (error) {
-    //update the test manage with error
+    console.log(error)
     updateTestManager(deploymentId, combinedRunner, event, true);
   }
 };
@@ -260,7 +263,7 @@ function generateEnvVars() {
 
 function updateTestManager(error) {
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-test-framework-manager"`,
+    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-test-framework-manager`,
     InvocationType: "Event",
     Payload: JSON.stringify({ hookId: `${hookId}`, deploymentId: `${deploymentId}`,UpdateReport: true, IntegResults: `${error}`})
   };
@@ -268,4 +271,12 @@ function updateTestManager(error) {
     if (err) console.log(err, err.stack); // an error occurred
     else console.log(data);           // successful response
   });
+}
+
+function sleep (ms) {
+  console.log('started sleep timer');
+  return new Promise(resolve => setTimeout(args => {
+    console.log('ended sleep timer');
+    resolve();
+  }, ms));
 }

@@ -88,7 +88,7 @@ resource "aws_lambda_function" "integration_runner" {
   timeout       = 180
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
   environment {
-    variables = var.environment_variables
+    variables = var.lambda_env_variables
   }
   depends_on = [
     aws_lambda_layer_version.lambda_layer_integration,
