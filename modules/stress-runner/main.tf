@@ -1,12 +1,11 @@
 locals{
     codebuild_name        = "codebuild-stress-runner-${var.app_name}-${var.env_type}" 
-    lambda_env_variables = {
+    lambda_env_variables = merge({
     APP_NAME               = var.app_name
     ENV_TYPE               = var.env_type
     JMX_FILE_PATH          = var.jmx_file_path
     JMETER_VERSION         = var.jmeter_version
-    TEST_ENV_VAR_OVERRIDES = var.environment_variables
-  }
+  },var.environment_variables)
 }
 
 resource "aws_codebuild_project" "stress_runner" {

@@ -16,8 +16,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "aws-sdk": "^2.945.0",
-    "newman": "^5.2.4",
-    "newman-reporter-htmlextra": "^1.22.4",
+    "newman": "^5.3.2",
+    "newman-reporter-htmlextra": "^1.22.10",
     "node-fetch": "^2.6.1",
     "newman-reporter-junitfull": "^1.1.1",
     "adm-zip": "^0.5.9"

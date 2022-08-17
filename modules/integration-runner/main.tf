@@ -16,13 +16,12 @@ locals {
     each.environment != null ? substr(each.environment, length(each.environment) - 5, 5) != ".json" ? each.environment : "" : ""
   ])
   using_local_files = length(local.local_collections) + length(local.local_environments) > 0
-  lambda_env_variables = {
+  lambda_env_variables = merge({
     S3_BUCKET              = local.using_local_files ? aws_s3_bucket.postman_bucket.bucket : null
     POSTMAN_COLLECTIONS    = jsonencode(var.postman_collections)
     APP_NAME               = var.app_name
     ENV_TYPE               = var.env_type
-    TEST_ENV_VAR_OVERRIDES = var.environment_variables
-  }
+  },var.environment_variables)
   lambda_function_name = "${var.app_name}-postman-tests"
 }
 
