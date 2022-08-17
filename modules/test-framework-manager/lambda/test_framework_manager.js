@@ -20,8 +20,8 @@ exports.handler = async function (event, context, callback) {
   const deploymentId = event.DeploymentId;
   const lifecycleEventHookExecutionId = event.lifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
-  const IntegResults = event.IntegResults;
-  const StressResults = event.StressResults;
+  let IntegResults = event.IntegResults;
+  let StressResults = event.StressResults;
 
   app_configuration = getConsulConfig();
   runIntegrationTests = app_configuration.runIntegrationTests
