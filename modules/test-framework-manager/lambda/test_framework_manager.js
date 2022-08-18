@@ -6,6 +6,8 @@ const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 const ssm = new AWS.SSM({apiVersion: '2014-11-06',region: 'us-east-1'});
 
+let deploymentId;
+let lifecycleEventHookExecutionId;
 let lb_dns_name;
 let integration_report_group_arn;
 let stress_report_group_arn;
@@ -15,24 +17,26 @@ let runIntegrationTests;
 let runStressTests;
 let branch;
 let repo;
+
 exports.handler = async function (event, context, callback) {
   console.log('event', event);
-  const deploymentId = event.DeploymentId;
-  const lifecycleEventHookExecutionId = event.lifecycleEventHookExecutionId;
+  deploymentId = event.DeploymentId;
+  lifecycleEventHookExecutionId = event.lifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
   let IntegResults = event.IntegResults;
   let StressResults = event.StressResults;
-
-  app_configuration = getConsulConfig();
-  runIntegrationTests = app_configuration.runIntegrationTests
-  runStressTests = app_configuration.runStressTests
+  
+  let app_configuration = getConsulConfig();
+  console.log(app_configuration)
+  runIntegrationTests = app_configuration.runIntegrationTests;
+  runStressTests = app_configuration.runStressTests;
   branch = app_configuration.branch;
   repo = app_configuration.repo;
   if (!runIntegrationTests) {
-    IntegResults = true
+    IntegResults = true;
   }
   if (!runStressTests) {
-    StressResults = true
+    StressResults = true;
   }
   if (event.UpdateReport) {
     if (IntegResults && StressResults) {
@@ -55,14 +59,14 @@ exports.handler = async function (event, context, callback) {
     // Workaround for CodeDeploy bug.
     // Give the ALB 10 seconds to make sure the test TG has switched to the new code.
 
-    const timer = sleep(parseInt(process.env.ALB_WAIT_TIME) * 1000);
+    const timer = sleep(parseInt(process.env.ALB_WAIT_TIME,10) * 1000);
 
     // store the error so that we can update codedeploy lifecycle if there are any errors including errors from downloading files
     let error;
     try {
+      const promises = [timer];
       var params = {
         deploymentId: deploymentId,
-        lifecycleEventHookExecutionId: lifecycleEventHookExecutionId /* required */
       };
       let env_name = await cd.getDeployment(params, function (err, data) {
         if (err) {
@@ -77,16 +81,16 @@ exports.handler = async function (event, context, callback) {
         environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
         environment = environment.replace("-green", "");
         environment = environment.replace("-blue", "");
-      };
+      }
       if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
         environment = env_name.deploymentInfo.applicationName.split("-")[1];
-      };
+      }
       const deploy_status = env_name.deploymentInfo.status;
 
       if (deploy_status == "Failed") {
         return callback(null);
       }
-      const lb_name = `${process.env.APP_NAME}-${lb_env_name}`
+      const lb_name = `${process.env.APP_NAME}-${lb_env_name}`;
       var elb_params = {
         Names: [
           lb_name
@@ -132,11 +136,11 @@ exports.handler = async function (event, context, callback) {
       console.log('starting executing tests ...');
       if (!error) {
         if (runIntegrationTests) {
-          runIntegrationTest()
+          runIntegrationTest();
           //parse result if failed, fail deploy
         } 
         if (runStressTests) {
-          runStressTest()
+          runStressTest();
           //parse result if failed, fail deploy
         }
 
@@ -148,7 +152,7 @@ exports.handler = async function (event, context, callback) {
     }
     if (error) throw error; // Cause the lambda to "fail"
   }
-}
+};
 
 function runIntegrationTest() {
   var params = {
@@ -198,58 +202,53 @@ async function updateRunner(deploymentId, combinedRunner, event, error) {
   }
 }
 
-function getConsulConfig(){
-  let CONSUL_ADDRESS;
-  let CONSUL_TOKEN;
+async function getConsulConfig(){
   let configMap = {};
-  var params = {
+  var paramsToken = {
     Name: '/infra/consul_http_token', /* required */
     WithDecryption: true
   };
-  CONSUL_TOKEN = ssm.getParameter(params, function(err, data) {
+  const CONSUL_TOKEN = await ssm.getParameter(paramsToken, function(err, data) {
     if (err) console.log(err, err.stack); // an error occurred
     else    {
-      response = JSON.parse(data)
-      return data.Parameter.Value
+      return data.Parameter.Value;
     } 
-  });
-  var params = {
+  }).promise();
+  var paramsAddr = {
     Name: '/infra/consul_project_id', /* required */
     WithDecryption: true
   };
-  CONSUL_ADDRESS = ssm.getParameter(params, function(err, data) {
+  const CONSUL_ADDRESS = await ssm.getParameter(paramsAddr, function(err, data) {
     if (err) console.log(err, err.stack); // an error occurred
     else    {
-      response = JSON.parse(data)
-      return data.Parameter.Value
+      return data.Parameter.Value;
     } 
-  });
-
+  }).promise();
   const consul = new Consul({
-    host: `consul-cluster-test.consul.${CONSUL_ADDRESS}.aws.hashicorp.cloud`,
+    host: `consul-cluster-test.consul.${CONSUL_ADDRESS.Parameter.Value}.aws.hashicorp.cloud`,
     secure: true,
     port: 443,
     promisify: true,
-    defaults : { token: `${CONSUL_TOKEN}` }
+    defaults : { token: `${CONSUL_TOKEN.Parameter.Value}` }
   });
-  consul.kv.get('terraform/poc-ecs-dotnet/app-env.json', function(err, result) {
+  await consul.kv.get(`terraform/${process.env.APP_NAME}/app-env.json`, function(err, result) {
     if (err) throw err;
     if (result === undefined) throw new Error('key not found');
-    app_json = JSON.parse(result.Value)
+    let app_json = JSON.parse(result.Value);
     
     if (app_json[`${process.env.ENV_NAME}`].run_stress_tests) {
-      configMap['run_stress_tests'] = app_json[`${process.env.ENV_NAME}`].run_stress_tests
+      configMap['run_stress_tests'] = app_json[`${process.env.ENV_NAME}`].run_stress_tests;
     } else {
-      configMap['run_stress_tests'] = false
+      configMap['run_stress_tests'] = false;
     }
     if (app_json[`${process.env.ENV_NAME}`].run_integration_tests) {
-      configMap['run_integration_tests'] = app_json[`${process.env.ENV_NAME}`].run_integration_tests
+      configMap['run_integration_tests'] = app_json[`${process.env.ENV_NAME}`].run_integration_tests;
     } else {
-      configMap['run_integration_tests'] = false
+      configMap['run_integration_tests'] = false;
     }
-    configMap['branch'] = app_json[`${process.env.ENV_NAME}`].pipeline_branch
-    configMap['repo'] = app_json[`${process.env.ENV_NAME}`].pipeline_repo
-  });
+    configMap['branch'] = app_json[`${process.env.ENV_NAME}`].pipeline_branch;
+    configMap['repo'] = app_json[`${process.env.ENV_NAME}`].pipeline_repo;
+  }).promise();
   return configMap;
 }
 
