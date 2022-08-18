@@ -39,8 +39,6 @@ exports.handler = function (event, context, callback) {
     console.log('No DeploymentId found in event, this will execute the postman tests and then exit.');
   }
 
-  //const timer = sleep(10000);
-  // store the error so that we can update codedeploy lifecycle if there are any errors including errors from downloading files
   let error;
   try {
     const postmanCollections = process.env.POSTMAN_COLLECTIONS;
@@ -66,14 +64,14 @@ exports.handler = function (event, context, callback) {
 
       // make sure all files are downloaded and we wait for 10 seconds before executing postman tests
       Promise.all(promises).then (
-        function () {
+          function () {
           console.log('starting postman tests ...');
           if (!error) {
             // no need to run tests if files weren't downloaded correctly
             for (const each of postmanList) {
               if (!error) {
                 // don't run later collections if previous one errored out
-                runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
+                  runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
                   error = err;
                 });
               }
@@ -216,7 +214,7 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
     await newmanRun({
       collection: postmanCollection,
       environment: postmanEnvironment,
-      reporters: ['junitfull','htmlextra'],
+      reporters: ['junit','htmlextra'],
       reporter: {
         htmlextra: {
           export: `/tmp/${deploymentId}/report.html`,
@@ -229,7 +227,7 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
           showMarkdownLinks: true,
           timezone: "Israel",
         },
-        junitfull: {
+        junit: {
           export: `/tmp/${deploymentId}/report.xml`,
         }
       },
