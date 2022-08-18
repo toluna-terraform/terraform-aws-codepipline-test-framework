@@ -21,7 +21,7 @@ let environment;
 let report_group;
 let run_stress_tests;
 
-exports.handler = async function (event, context, callback) {
+exports.handler = function (event, context, callback) {
   console.log('event', event);
   deploymentId = event.deploymentId;
   combinedRunner = event.Combined;
@@ -39,7 +39,7 @@ exports.handler = async function (event, context, callback) {
     console.log('No DeploymentId found in event, this will execute the postman tests and then exit.');
   }
 
-  const timer = sleep(10000);
+  //const timer = sleep(10000);
   // store the error so that we can update codedeploy lifecycle if there are any errors including errors from downloading files
   let error;
   try {
@@ -49,7 +49,7 @@ exports.handler = async function (event, context, callback) {
       throw error;
     } else {
       const postmanList = JSON.parse(postmanCollections);
-      const promises = [timer];
+      const promises = [];
       //report_group_arns.forEach(item => console.log(item));
       for (const each of postmanList) {
         if (each.collection.includes('.json')) {
@@ -65,28 +65,31 @@ exports.handler = async function (event, context, callback) {
       }
 
       // make sure all files are downloaded and we wait for 10 seconds before executing postman tests
-      await Promise.all(promises);
-
-      console.log('starting postman tests ...');
-      if (!error) {
-        // no need to run tests if files weren't downloaded correctly
-        for (const each of postmanList) {
+      Promise.all(promises).then (
+        function () {
+          console.log('starting postman tests ...');
           if (!error) {
-            // don't run later collections if previous one errored out
-            await runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
-              error = err;
-            });
+            // no need to run tests if files weren't downloaded correctly
+            for (const each of postmanList) {
+              if (!error) {
+                // don't run later collections if previous one errored out
+                runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
+                  error = err;
+                });
+              }
+            }
           }
-        }
-      }
-    }
-    if (!run_stress_tests) {
-    await updateTestManager(deploymentId, combinedRunner, event, error);
+        }).then(
+          function () {
+            if (!run_stress_tests) {
+              updateTestManager(deploymentId, combinedRunner, event, error);
+            }
+          });
     }
   } catch (e) {
     //update the test manage with error
-    await updateTestManager(deploymentId, combinedRunner, event, true);
-    throw e
+    updateTestManager(deploymentId, combinedRunner, event, true);
+    throw e;
   }
   if (error) throw error;
 };
@@ -154,11 +157,11 @@ async function uploadReports(environment, deploymentId) {
   };
   await cb.startBuild(cbParams, function (err, data) {
     if (err) {
-      console.log(`ERROR::${err}`);
       throw err;
     }
-    console.log(`File uploaded successfully. ${data.Location}`);
+    console.log(`Started publishing reports.`);
   });
+
 }
 
 async function downloadFileFromBucket(env_name, key) {
@@ -184,9 +187,9 @@ async function downloadFileFromBucket(env_name, key) {
   return filename;
 }
 
-async function newmanRun(options, environment, deploymentId) {
+function newmanRun(options, environment, deploymentId) {
   return new Promise((resolve, reject) => {
-    const test = newman.run(options)
+    newman.run(options)
       .on('beforeDone', (err, args) => {
         if (err) {
           reject(err);
@@ -213,7 +216,7 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
     await newmanRun({
       collection: postmanCollection,
       environment: postmanEnvironment,
-      reporters: ['htmlextra', 'junitfull'],
+      reporters: ['junitfull','htmlextra'],
       reporter: {
         htmlextra: {
           export: `/tmp/${deploymentId}/report.html`,
@@ -240,7 +243,7 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
       throw new Error('collection run encountered errors or test failures');
     }
   } catch (err) {
-    console.log(err);
+    console.log(`ERROR:::${err}`);
     throw err;
   }
 }
@@ -268,12 +271,4 @@ function generateEnvVars() {
     envVarsArray.push({ key, value });
   }
   return envVarsArray;
-}
-
-function sleep (ms) {
-  console.log('started sleep timer');
-  return new Promise(resolve => setTimeout(args => {
-    console.log('ended sleep timer');
-    resolve();
-  }, ms));
 }
