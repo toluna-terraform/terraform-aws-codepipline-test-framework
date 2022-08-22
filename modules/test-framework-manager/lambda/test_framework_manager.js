@@ -43,17 +43,29 @@ exports.handler = function (event, context, callback) {
               getConsulConfig(value.address,value.token,value.deploy_details.environment).then(
                 function(configDetails){
                    app_config['CONFIG_DETAILS'] =  configDetails;
-                   console.log(app_config)
-                   if (app_config['CONFIG_DETAILS'].run_integration_tests) {
-                      runIntegrationTest(app_config);
-                      //parse result if failed, fail deploy
-                      }
-                    if (runStressTests) {
-                          runStressTest();
+                   console.log(app_config);
+                    if (app_config['CONFIG_DETAILS'].run_integration_tests) {
+                          runIntegrationTest(app_config).then(
+                            function(result){
+                              result = JSON.parse(result)
+                              if(result.status === 'SUCCESSFUL' && app_config['CONFIG_DETAILS'].run_stress_tests) {
+                                console.log('Integration tests passed, now starting Stress tests');
+                              } else if (result.status === 'SUCCESSFUL' && !app_config['CONFIG_DETAILS'].run_stress_tests) {
+                                console.log('update deploy success');
+                              } else {
+                                console.log('update deploy failed');
+                              }
+                            }
+                            )
+
+                    }
+                    else if (app_config['CONFIG_DETAILS'].run_stress_tests) {
+                        //  runStressTest();
                         //parse result if failed, fail deploy
+                        console.log("STRESS:::::");
                       }
                 }
-              )
+              );
             }
           );
         }
@@ -64,34 +76,6 @@ exports.handler = function (event, context, callback) {
     updateRunner(deploymentId, combinedRunner, event, error);
     throw error;
   }
-
-  
-  /*if (!runStressTests) {
-    StressResults = true;
-  }
-  if (event.UpdateReport) {
-    if (IntegResults && StressResults) {
-       updateRunner(deploymentId, combinedRunner, event, false);
-    }
-    else {
-       updateRunner(deploymentId, combinedRunner, event, true);
-    }
-  } else {
-    if (IntegResults && StressResults) {
-      if (deploymentId) {
-        console.log(`After tests are complete, this will update the CodeDeploy deployment ${deploymentId}.`);
-      } else if (combinedRunner) {
-        console.log(`After tests are complete, this will return a pass/fail to the combined runner: ${combinedRunner}`);
-      } else {
-        console.log('No DeploymentId found in event, this will execute the tests and then exit.');
-      }
-    }*/
-
-    // Workaround for CodeDeploy bug.
-    // Give the ALB 10 seconds to make sure the test TG has switched to the new code.
-
-    
-
 };
 
 async function runIntegrationTest(app_config) {
@@ -100,19 +84,20 @@ async function runIntegrationTest(app_config) {
     InvocationType: "RequestResponse",
     Payload: JSON.stringify({ hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}` , report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME'].concat(":4443")}` })
   };
-  
   return await new Promise((resolve, reject) => {
   setTimeout(function() {
   lambda.invoke(params, function (err, data) {
-    if (err) reject(err, err.stack); // an error occurred
+    if (err) {
+        console.log(`integration tests failed with error:${err}`)
+        reject(err, err.stack);
+      }// an error occurred
     else {
       console.log(data);
       resolve(data.Payload);
-      }  // successful response
+    }  
   });
   },1000);
   });
-  
 }
 
 function runStressTest(app_config) {
