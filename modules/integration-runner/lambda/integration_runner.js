@@ -67,20 +67,38 @@ exports.handler = function (event, context, callback) {
               try {
                 let result = await runTest(each.collection, each.environment, environment, deploymentId)  
                 if (result) {
-                  callback(result);
+                  var response = {
+                    statusCode: '400',
+                    errorType: 'string',
+                    errorMessage: `${result}`,
+                    status: 'FAILED'
+                  }
+                  callback(null,response);
                 }
               } catch (e) {
                 console.error(e);
                 return e
               }
           }
-          callback(null,"SUCCESSFUL");
+          var response = {
+                    statusCode: '200',
+                    errorType: 'string',
+                    errorMessage: '',
+                    status: 'SUCCESSFUL'
+                  }
+          callback(null,response);
         }
         )
       )
     }
   } catch (e) {
-    callback(Error(e));
+    var response = {
+                    statusCode: '400',
+                    errorType: 'string',
+                    errorMessage: `${e}`,
+                    status: 'FAILED'
+                  }
+                  callback(null,response);
     throw e;
   }
 };
