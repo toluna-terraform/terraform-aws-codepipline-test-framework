@@ -20,6 +20,7 @@ let lb_dns_name;
 let environment;
 let report_group;
 let run_stress_tests;
+let error;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
@@ -29,8 +30,7 @@ exports.handler = function (event, context, callback) {
   lb_dns_name = event.lb_name;
   environment = event.environment;
   report_group = event.report_group;
-  run_stress_tests = event.runStressTest;
-
+  
   if (deploymentId) {
     console.log(`After postman tests are complete, this will update the CodeDeploy deployment ${deploymentId}.`);
   } else if (combinedRunner) {
@@ -38,8 +38,6 @@ exports.handler = function (event, context, callback) {
   } else {
     console.log('No DeploymentId found in event, this will execute the postman tests and then exit.');
   }
-
-  let error;
   try {
     const postmanCollections = process.env.POSTMAN_COLLECTIONS;
     if (!postmanCollections) {
@@ -62,38 +60,33 @@ exports.handler = function (event, context, callback) {
         }
       }
 
-      // make sure all files are downloaded and we wait for 10 seconds before executing postman tests
-      Promise.all(promises).then (
-          function () {
-          console.log('starting postman tests ...');
-          if (!error) {
-            // no need to run tests if files weren't downloaded correctly
-            for (const each of postmanList) {
-              if (!error) {
-                // don't run later collections if previous one errored out
-                  runTest(each.collection, each.environment, environment, deploymentId).catch(err => {
-                  error = err;
-                });
+      Promise.all(promises).then(
+        (async function(){
+          console.log('starting postman tests ...'); 
+          for (const each of postmanList) {
+              try {
+                let result = await runTest(each.collection, each.environment, environment, deploymentId)  
+                if (result) {
+                  callback(result);
+                }
+              } catch (e) {
+                console.error(e);
+                return e
               }
-            }
           }
-        }).then(
-          function () {
-            if (!run_stress_tests) {
-              updateTestManager(deploymentId, combinedRunner, event, error);
-            }
-          });
+          callback(null,"SUCCESSFUL");
+        }
+        )
+      )
     }
   } catch (e) {
-    //update the test manage with error
-    updateTestManager(deploymentId, combinedRunner, event, true);
+    callback(Error(e));
     throw e;
   }
-  if (error) throw error;
 };
 
 async function uploadReports(environment, deploymentId) {
-  let bucket_env_name = environment.split("-")[0];
+  let bucket_env_name = environment;
   const zip = new AdmZip();
   const outputFile = `/tmp/${deploymentId}.zip`;
   zip.addLocalFolder(`/tmp/${deploymentId}`);
@@ -163,7 +156,11 @@ async function uploadReports(environment, deploymentId) {
 }
 
 async function downloadFileFromBucket(env_name, key) {
-  let bucket_env_name = env_name.split("-")[0];
+  
+    return await new Promise((resolve, reject) => {
+    setTimeout(function() {
+  
+  let bucket_env_name = env_name;
   // Stripping relative path off of key.
   key = path.basename(key);
   const filename = `${tmpDir}${sep}${key}`;
@@ -171,18 +168,20 @@ async function downloadFileFromBucket(env_name, key) {
   console.log(`started download for ${key} from s3 bucket`);
 
   let data;
-  try {
-    data = await s3.getObject({
+   s3.getObject({
       Bucket: process.env.S3_BUCKET,
       Key: key
-    }).promise();
-  } catch (err) {
-    console.error(`error trying to get object from bucket: ${err}`);
-    throw err;
-  }
-  await fs.writeFile(filename, data.Body.toString());
-  console.log(`downloaded ${filename}`);
-  return filename;
+    },function (err, data) {
+        if (err){
+          reject(err)
+        }
+        fs.writeFile(filename, data.Body.toString());
+        console.log(`downloaded ${filename}`);
+        resolve(filename);  
+    })
+    },1000);
+  });
+  
 }
 
 function newmanRun(options, environment, deploymentId) {
@@ -193,7 +192,8 @@ function newmanRun(options, environment, deploymentId) {
           reject(err);
         }
         else if (JSON.stringify(args.summary.error) || args.summary.run.failures.length) {
-          newmanRunFailed = true;
+           newmanRunFailed = true;
+           reject("collection run encountered errors or test failures");
         }
       })
       .on('done', function (err, args) {
@@ -238,24 +238,13 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
     console.log('collection run complete!');
     uploadReports(environment,deploymentId);
     if (newmanRunFailed) {
+      console.log(`newManFaild::::${newmanRunFailed}`)
       throw new Error('collection run encountered errors or test failures');
     }
   } catch (err) {
     console.log(`ERROR:::${err}`);
-    throw err;
+    return Error(err);
   }
-}
-
-async function updateTestManager(error) {
-  var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-test-framework-manager`,
-    InvocationType: "Event",
-    Payload: JSON.stringify({ hookId: `${hookId}`, deploymentId: `${deploymentId}`,UpdateReport: true, IntegResults: `${error}`})
-  };
-  lambda.invoke(params, function (err, data) {
-    if (err) console.log(err, err.stack); // an error occurred
-    else console.log(data);           // successful response
-  });
 }
 
 function generateEnvVars() {

@@ -8,42 +8,73 @@ const ssm = new AWS.SSM({apiVersion: '2014-11-06',region: 'us-east-1'});
 
 let deploymentId;
 let lifecycleEventHookExecutionId;
-let lb_dns_name;
 let integration_report_group_arn;
 let stress_report_group_arn;
-let environment;
-let lb_env_name;
 let runIntegrationTests;
 let runStressTests;
-let branch;
-let repo;
+let details;
 
-exports.handler = async function (event, context, callback) {
+exports.handler = function (event, context, callback) {
   console.log('event', event);
   deploymentId = event.DeploymentId;
   lifecycleEventHookExecutionId = event.lifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
   let IntegResults = event.IntegResults;
   let StressResults = event.StressResults;
-  
-  let app_configuration = getConsulConfig();
-  console.log(app_configuration)
-  runIntegrationTests = app_configuration.runIntegrationTests;
-  runStressTests = app_configuration.runStressTests;
-  branch = app_configuration.branch;
-  repo = app_configuration.repo;
+  let app_config = {};
   if (!runIntegrationTests) {
     IntegResults = true;
   }
   if (!runStressTests) {
     StressResults = true;
   }
+  
+  try {
+  sleep(parseInt(process.env.ALB_WAIT_TIME,10) * 1000).then(
+  getDeploymentDetails()
+  .then(
+    function(value){
+      getLBDetails(value).then(function(loadbalancerName){app_config['LB_NAME'] = loadbalancerName});
+      getReportGroupDetails(value).then(function(reportGroups){app_config['REPORT_GROUPS'] = reportGroups});
+      getConsulAddress(value).then(
+        function(value){
+          getConsulToken(value).then(
+            function(value){
+              getConsulConfig(value.address,value.token,value.deploy_details.environment).then(
+                function(configDetails){
+                   app_config['CONFIG_DETAILS'] =  configDetails;
+                   console.log(app_config)
+                   if (app_config['CONFIG_DETAILS'].run_integration_tests) {
+                      runIntegrationTest(app_config);
+                      //parse result if failed, fail deploy
+                      }
+                    if (runStressTests) {
+                          runStressTest();
+                        //parse result if failed, fail deploy
+                      }
+                }
+              )
+            }
+          );
+        }
+      );
+    }
+  ));
+  } catch (error) {
+    updateRunner(deploymentId, combinedRunner, event, error);
+    throw error;
+  }
+
+  
+  /*if (!runStressTests) {
+    StressResults = true;
+  }
   if (event.UpdateReport) {
     if (IntegResults && StressResults) {
-      await updateRunner(deploymentId, combinedRunner, event, false);
+       updateRunner(deploymentId, combinedRunner, event, false);
     }
     else {
-      await updateRunner(deploymentId, combinedRunner, event, true);
+       updateRunner(deploymentId, combinedRunner, event, true);
     }
   } else {
     if (IntegResults && StressResults) {
@@ -54,128 +85,52 @@ exports.handler = async function (event, context, callback) {
       } else {
         console.log('No DeploymentId found in event, this will execute the tests and then exit.');
       }
-    }
+    }*/
 
     // Workaround for CodeDeploy bug.
     // Give the ALB 10 seconds to make sure the test TG has switched to the new code.
 
-    const timer = sleep(parseInt(process.env.ALB_WAIT_TIME,10) * 1000);
+    
 
-    // store the error so that we can update codedeploy lifecycle if there are any errors including errors from downloading files
-    let error;
-    try {
-      const promises = [timer];
-      var params = {
-        deploymentId: deploymentId,
-      };
-      let env_name = await cd.getDeployment(params, function (err, data) {
-        if (err) {
-          console.log(err, err.stack); // an error occurred
-        }
-        else {
-          console.log(data);
-        }// successful response
-      }).promise();
-      if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')) {
-        lb_env_name = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
-        environment = env_name.deploymentInfo.applicationName.replace("ecs-deploy-", "");
-        environment = environment.replace("-green", "");
-        environment = environment.replace("-blue", "");
-      }
-      if (env_name.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
-        environment = env_name.deploymentInfo.applicationName.split("-")[1];
-      }
-      const deploy_status = env_name.deploymentInfo.status;
-
-      if (deploy_status == "Failed") {
-        return callback(null);
-      }
-      const lb_name = `${process.env.APP_NAME}-${lb_env_name}`;
-      var elb_params = {
-        Names: [
-          lb_name
-        ],
-      };
-      let lb_data = await elbv2.describeLoadBalancers(elb_params, function (err, data) {
-        if (err) {
-          console.log(err, err.stack); // an error occurred
-        }
-        else {
-          console.log(data);
-        }
-      }).promise();
-      lb_dns_name = `${lb_data.LoadBalancers[0].DNSName}`;
-      lb_dns_name = lb_dns_name.concat(":4443");
-      var listReportParams = {
-
-      };
-      let reportGroup = await cb.listReportGroups(listReportParams, function (err, data) {
-        if (err) {
-          console.log(err, err.stack); // an error occurred
-        }
-        else {
-          console.log(data);
-        }
-      }).promise();
-      var integration_report_group_arns = Object.values(reportGroup.reportGroups);
-      for (const [key, value] of Object.entries(integration_report_group_arns)) {
-        if (value.endsWith(`${environment}-IntegrationTestReport`)) {
-          console.log(`Selected Report Group ARN::::${value}`);
-          integration_report_group_arn = value;
-        }
-      }
-      var stress_report_group_arns = Object.values(reportGroup.reportGroups);
-      for (const [key, value] of Object.entries(stress_report_group_arns)) {
-        if (value.endsWith(`${environment}-StressTestReport`)) {
-          console.log(`Selected Report Group ARN::::${value}`);
-          stress_report_group_arn = value;
-        }
-      }
-      await Promise.all(promises);
-
-      console.log('starting executing tests ...');
-      if (!error) {
-        if (runIntegrationTests) {
-          runIntegrationTest();
-          //parse result if failed, fail deploy
-        } 
-        if (runStressTests) {
-          runStressTest();
-          //parse result if failed, fail deploy
-        }
-
-      }
-
-    } catch (e) {
-      await updateRunner(deploymentId, combinedRunner, event, true);
-      throw e;
-    }
-    if (error) throw error; // Cause the lambda to "fail"
-  }
 };
 
-function runIntegrationTest() {
+async function runIntegrationTest(app_config) {
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner"`,
+    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`,
     InvocationType: "RequestResponse",
-    Payload: JSON.stringify({ runStressTest: runStressTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`, report_group: `${integration_report_group_arn}`, lb_name: `${lb_dns_name.concat(":4443")}` })
+    Payload: JSON.stringify({ hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}` , report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME'].concat(":4443")}` })
   };
+  
+  return await new Promise((resolve, reject) => {
+  setTimeout(function() {
   lambda.invoke(params, function (err, data) {
-    if (err) console.log(err, err.stack); // an error occurred
-    else console.log(data);           // successful response
+    if (err) reject(err, err.stack); // an error occurred
+    else {
+      console.log(data);
+      resolve(data.Payload);
+      }  // successful response
   });
+  },1000);
+  });
+  
 }
 
-function runStressTest() {
+function runStressTest(app_config) {
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner"`,
     InvocationType: "Event",
-    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,repo: `${repo}`, branch: `${branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${lb_dns_name}` })
+    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,repo: `${app_config['CONFIG_DETAILS'].repo}`, branch: `${app_config['CONFIG_DETAILS'].branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
   };
+  
+  
+  
   lambda.invoke(params, function (err, data) {
     if (err) console.log(err, err.stack); // an error occurred
     else console.log(data);           // successful response
   });
+  
+  
+  
 }
 
 async function updateRunner(deploymentId, combinedRunner, event, error) {
@@ -202,54 +157,165 @@ async function updateRunner(deploymentId, combinedRunner, event, error) {
   }
 }
 
-async function getConsulConfig(){
-  let configMap = {};
+async function getDeploymentDetails(){
+  let lb_env_name,environment;
+  var params = {
+    deploymentId: deploymentId,
+  };
+  return await new Promise((resolve, reject) => {
+    setTimeout(function() {
+      cd.getDeployment(params, function (err, data) {
+        if (err) {
+          console.log(err, err.stack); // an error occurred
+          reject(err, err.stack);
+        }
+        else {
+          console.log(data);
+          if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')) {
+      lb_env_name = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+      environment = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+      environment = environment.replace("-green", "");
+      environment = environment.replace("-blue", "");
+    }
+    if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
+      environment = data.deploymentInfo.applicationName.split("-")[1];
+    }
+    const deploy_status = data.deploymentInfo.status;
+    if (deploy_status == "Failed") {
+      reject(`deploy_status = ${deploy_status}`);
+    }
+    resolve({"lb_env_name":lb_env_name,"environment":environment});
+        }// successful response
+      });
+    },1000);
+  });
+}
+
+async function getLBDetails(deploy_details){
+  const lb_name = `${process.env.APP_NAME}-${deploy_details.lb_env_name}`;
+    var elb_params = {
+      Names: [
+        lb_name
+      ],
+    };
+  return await new Promise((resolve, reject) => {
+    let lb_dns_name;
+    setTimeout(function() {
+      elbv2.describeLoadBalancers(elb_params, function (err, data) {
+        if (err) {
+          console.log(err, err.stack); // an error occurred
+          reject(err, err.stack);
+        }
+        else {
+         // console.log(data);
+          lb_dns_name = `${data.LoadBalancers[0].DNSName}`;
+          resolve(lb_dns_name);
+        }// successful response
+      })
+    },1000);
+  });
+}
+
+async function getReportGroupDetails(deploy_details){
+  var listReportParams = {
+
+  };
+  return await new Promise((resolve, reject) => {
+    setTimeout(function() {
+      cb.listReportGroups(listReportParams, function (err, data) {
+        if (err) {
+          console.log(err, err.stack); // an error occurred
+          reject(err, err.stack);
+        }
+        else {
+          var integration_report_group_arns = Object.values(data.reportGroups);
+          for (const [key, name] of Object.entries(integration_report_group_arns)) {
+            if (name.endsWith(`${deploy_details.environment}-IntegrationTestReport`)) {
+              console.log(`Selected Report Group ARN::::${name}`);
+              integration_report_group_arn = name;
+            }
+          }
+          var stress_report_group_arns = Object.values(data.reportGroups);
+          for (const [key, name] of Object.entries(stress_report_group_arns)) {
+            if (name.endsWith(`${deploy_details.environment}-StressTestReport`)) {
+              console.log(`Selected Report Group ARN::::${name}`);
+              stress_report_group_arn = name;
+            }
+          }
+          resolve({"integration_report_group_arn":integration_report_group_arn,"stress_report_group_arn":stress_report_group_arn});
+        }// successful response
+      });
+    },1000);
+  });
+}
+
+async function getConsulToken(value){
   var paramsToken = {
     Name: '/infra/consul_http_token', /* required */
     WithDecryption: true
   };
-  const CONSUL_TOKEN = await ssm.getParameter(paramsToken, function(err, data) {
-    if (err) console.log(err, err.stack); // an error occurred
-    else    {
-      return data.Parameter.Value;
-    } 
-  }).promise();
+  return await new Promise((resolve, reject) => {
+    setTimeout(function() {
+    ssm.getParameter(paramsToken, function(err, data) {
+    if (err) reject(err, err.stack); // an error occurred
+      else    {
+        resolve({"address":value.address,"token":data.Parameter.Value,"deploy_details":value.deploy_details});
+      } 
+    });
+  },1000);
+  });
+}
+
+async function getConsulAddress(deploy_details){
   var paramsAddr = {
     Name: '/infra/consul_project_id', /* required */
     WithDecryption: true
   };
-  const CONSUL_ADDRESS = await ssm.getParameter(paramsAddr, function(err, data) {
-    if (err) console.log(err, err.stack); // an error occurred
-    else    {
-      return data.Parameter.Value;
-    } 
-  }).promise();
+  return await new Promise((resolve, reject) => {
+    setTimeout(function() {
+    ssm.getParameter(paramsAddr, function(err, data) {
+    if (err) reject(err, err.stack); // an error occurred
+      else    {
+        resolve({"address":data.Parameter.Value,"deploy_details":deploy_details});
+      } 
+    });
+    },1000);
+  });
+}
+
+async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN,ENVIRONMENT){
   const consul = new Consul({
-    host: `consul-cluster-test.consul.${CONSUL_ADDRESS.Parameter.Value}.aws.hashicorp.cloud`,
+    host: `consul-cluster-test.consul.${CONSUL_ADDRESS}.aws.hashicorp.cloud`,
     secure: true,
     port: 443,
     promisify: true,
-    defaults : { token: `${CONSUL_TOKEN.Parameter.Value}` }
+    defaults : { token: `${CONSUL_TOKEN}` }
   });
-  await consul.kv.get(`terraform/${process.env.APP_NAME}/app-env.json`, function(err, result) {
-    if (err) throw err;
-    if (result === undefined) throw new Error('key not found');
-    let app_json = JSON.parse(result.Value);
-    
-    if (app_json[`${process.env.ENV_NAME}`].run_stress_tests) {
-      configMap['run_stress_tests'] = app_json[`${process.env.ENV_NAME}`].run_stress_tests;
-    } else {
-      configMap['run_stress_tests'] = false;
-    }
-    if (app_json[`${process.env.ENV_NAME}`].run_integration_tests) {
-      configMap['run_integration_tests'] = app_json[`${process.env.ENV_NAME}`].run_integration_tests;
-    } else {
-      configMap['run_integration_tests'] = false;
-    }
-    configMap['branch'] = app_json[`${process.env.ENV_NAME}`].pipeline_branch;
-    configMap['repo'] = app_json[`${process.env.ENV_NAME}`].pipeline_repo;
-  }).promise();
-  return configMap;
+  let configMap = {};
+  return await new Promise((resolve, reject) => {
+    setTimeout(function() {
+      consul.kv.get(`terraform/${process.env.APP_NAME}/app-env.json`, function(err, result) {
+      if (err) reject(err);
+      else if (result === undefined) reject('key not found');
+      let app_json = JSON.parse(result.Value);
+      let selectedEnv = app_json[`${ENVIRONMENT}`];
+      if ( selectedEnv.run_stress_tests === undefined ) {
+        configMap['run_stress_tests'] = false;
+      } else {
+        configMap['run_stress_tests'] = selectedEnv.run_stress_tests;
+      }
+      if ( selectedEnv.run_integration_tests === undefined ) {
+        configMap['run_integration_tests'] = false;
+      } else {
+        configMap['run_integration_tests'] = selectedEnv.run_integration_tests;
+      }
+      configMap['branch'] = selectedEnv.pipeline_branch;
+      configMap['repo'] = selectedEnv.pipeline_repo;
+      configMap['environment'] = ENVIRONMENT;
+      resolve(configMap);
+  });
+    },1000);
+});
 }
 
 
