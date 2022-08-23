@@ -1,3 +1,4 @@
+<!-- BEGIN_TF_DOCS -->
 Integration tests framework [Terraform module](https://registry.terraform.io/modules/toluna-terraform/codepipline-test-framework/aws/latest)
 
 ### Description
@@ -21,6 +22,7 @@ module "test_runner" {
   app_name = var.app_name
   env_type = var.env_type
   postman_collections = var.postman_collections
+  jmx_file_path = var.jmx_file_path
 }
 ```
 
@@ -31,7 +33,7 @@ In your deploy appspec include the following condition to determinant if to run 
     ,
     "Hooks": [
 		{
-			"BeforeAllowTraffic": "${APP_NAME}-${ENV_TYPE}-test-framework"
+			"BeforeAllowTraffic": "${APP_NAME}-${ENV_TYPE}-test-framework-manager"
 		}
 	]
     %{ endif }
@@ -39,60 +41,51 @@ In your deploy appspec include the following condition to determinant if to run 
 
 ## Requirements
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.59 |
+No requirements.
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.59 |
-| <a name="provider_null"></a> [null](#provider\_null) | >= 3.1.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="test_framework"></a> [test framework](#module\_test_framework) | ../../ |  |
+| <a name="module_test_framework_manager"></a> [test\_framework\_manager](#module\_test\_framework\_manager) | ./modules/test-framework-manager | n/a |
 
 ## Resources
 
 | Name | Type |
 |------|------|
-| [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [aws_s3_bucket](https://registry.terraform.io/providers/hashicorp/aws_s3_bucket/latest/docs/resources/resource) | resource |
-| [aws_s3_bucket_public_access_block](https://registry.terraform.io/providers/hashicorp/aws_s3_bucket_public_access_block/latest/docs/resources/resource) | resource |
-| [aws_s3_bucket_policy](https://registry.terraform.io/providers/hashicorp/aws_s3_bucket_policy/latest/docs/resources/resource) | resource |
-| [archive_file](https://registry.terraform.io/providers/hashicorp/archive_file/latest/docs/resources/resource) | resource |
-| [aws_lambda_layer_version](https://registry.terraform.io/providers/hashicorp/aws_lambda_layer_version/latest/docs/resources/resource) | resource |
-| [aws_lambda_function](https://registry.terraform.io/providers/hashicorp/aws_lambda_function/latest/docs/resources/resource) | resource |
-| [aws_iam_role](https://registry.terraform.io/providers/hashicorp/aws_iam_role/latest/docs/resources/resource) | resource |
-| [aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws_iam_role_policy_attachment/latest/docs/resources/resource) | resource |
-| [aws_codebuild_project](https://registry.terraform.io/providers/hashicorp/aws_codebuild_project/latest/docs/resources/resource) | resource |
-
+| [aws_codebuild_report_group.CodeCoverageReport](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_report_group) | resource |
+| [aws_codebuild_report_group.IntegrationTestReport](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_report_group) | resource |
+| [aws_codebuild_report_group.StreesTestReport](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_report_group) | resource |
+| [aws_codebuild_report_group.TestReport](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_report_group) | resource |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_ssm_parameter.ado_password](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.ado_user](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 
 ## Inputs
 
-No inputs.
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_app_envs"></a> [app\_envs](#input\_app\_envs) | n/a | `any` | n/a | yes |
+| <a name="input_app_name"></a> [app\_name](#input\_app\_name) | n/a | `string` | n/a | yes |
+| <a name="input_env_type"></a> [env\_type](#input\_env\_type) | n/a | `string` | n/a | yes |
+| <a name="input_environment_variables"></a> [environment\_variables](#input\_environment\_variables) | n/a | `map(string)` | `{}` | no |
+| <a name="input_environment_variables_parameter_store"></a> [environment\_variables\_parameter\_store](#input\_environment\_variables\_parameter\_store) | n/a | `map(string)` | <pre>{<br>  "ADO_PASSWORD": "/app/ado_password",<br>  "ADO_USER": "/app/ado_user"<br>}</pre> | no |
+| <a name="input_jmeter_version"></a> [jmeter\_version](#input\_jmeter\_version) | n/a | `string` | `"5.5"` | no |
+| <a name="input_jmx_file_path"></a> [jmx\_file\_path](#input\_jmx\_file\_path) | n/a | `string` | `""` | no |
+| <a name="input_postman_collections"></a> [postman\_collections](#input\_postman\_collections) | A list of postman collections (and environments) to run during the execution of the lambda function (in order). Collections and environments from the Postman API must be the collection/environment id | <pre>list(object({<br>    collection  = string<br>    environment = string<br>  }))</pre> | n/a | yes |
 
 ## Outputs
-No outputs.
 
-## Tests
-### Pre Requisites 
-* go 1.17 and above
-* gotestsum https://github.com/gotestyourself/gotestsum/releases (wrapper for go junit tests)
-
-### Steps to run
-* under tests folder run the following command
-* go mod init github.com/toluna-terraform/terraform-aws-codepipline-test-framework
-* go mod tidy (to pull all dependencies)
-* AWS_PROFILE=<account profile name> gotestsum --format testname --junitfile unit-tests.xml --junitfile-testsuite-name short --junitfile-testcase-classname short
-
-### References
-https://github.com/gruntwork-io/terratest/tree/dae956eb39e91dfb00f3ba85060a6dbf58c6782b
-https://terratest.gruntwork.io/docs/testing-best-practices
-https://terratest.gruntwork.io/docs/getting-started/quick-start/
-https://terratest.gruntwork.io/docs/testing-best-practices/debugging-interleaved-test-output/#installing-the-utility-binaries
+| Name | Description |
+|------|-------------|
+| <a name="output_CodeCoverageReport"></a> [CodeCoverageReport](#output\_CodeCoverageReport) | n/a |
+| <a name="output_IntegrationTestReport"></a> [IntegrationTestReport](#output\_IntegrationTestReport) | n/a |
+| <a name="output_TestReport"></a> [TestReport](#output\_TestReport) | n/a |
+<!-- END_TF_DOCS -->

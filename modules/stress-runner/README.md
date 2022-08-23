@@ -1,85 +1,41 @@
-Integration tests framework [Terraform module](https://registry.terraform.io/modules/toluna-terraform/codepipline-test-framework/aws/latest)
-
-### Description
-This module supports running integration tests intended as a post installation hook of deploy stage using codepipeline,before shifting traffic from test to production, it is lambda based and uses postman collections combined with postman Cli(newman).
-The output is then uploaded to S3 as junit and html reports and publish under codebuild with a unique report group.
-
-\* **an environment equals in it's name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.**
-
-
-
-The following resources will be created:
-- Lambda
-- Codebuild project
-- Report group
-
-
-## Usage
-```hcl
-module "test_reports" {
-  source                                = "./modules/test-publisher"
-  app_name                              = var.app_name
-  env_type                              = var.env_type
-  codebuild_name                        = "tests-reports-${var.app_name}"
-  s3_bucket                             = "${var.app_name}-${var.env_type}-postman-tests"
-  privileged_mode                       = true
-  environment_variables_parameter_store = var.environment_variables_parameter_store
-}
-```
-
-## Toggles
-In your deploy appspec include the following condition to determinant if to run tests after deploy and before shifting traffic. 
-```
-    %{ if HOOKS }
-    ,
-    "Hooks": [
-		{
-			"BeforeAllowTraffic": "${APP_NAME}-${ENV_TYPE}-test-framework"
-		}
-	]
-    %{ endif }
-```
-
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.59 |
+No requirements.
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.59 |
-| <a name="provider_null"></a> [null](#provider\_null) | >= 3.1.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
 
-| Name | Source | Version |
-|------|--------|---------|
-| <a name="test_framework"></a> [test framework](#module\_test_framework) | ../../ |  |
+No modules.
 
 ## Resources
 
 | Name | Type |
 |------|------|
-| [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [aws_s3_bucket](https://registry.terraform.io/providers/hashicorp/aws_s3_bucket/latest/docs/resources/resource) | resource |
-| [aws_s3_bucket_public_access_block](https://registry.terraform.io/providers/hashicorp/aws_s3_bucket_public_access_block/latest/docs/resources/resource) | resource |
-| [aws_s3_bucket_policy](https://registry.terraform.io/providers/hashicorp/aws_s3_bucket_policy/latest/docs/resources/resource) | resource |
-| [archive_file](https://registry.terraform.io/providers/hashicorp/archive_file/latest/docs/resources/resource) | resource |
-| [aws_lambda_layer_version](https://registry.terraform.io/providers/hashicorp/aws_lambda_layer_version/latest/docs/resources/resource) | resource |
-| [aws_lambda_function](https://registry.terraform.io/providers/hashicorp/aws_lambda_function/latest/docs/resources/resource) | resource |
-| [aws_iam_role](https://registry.terraform.io/providers/hashicorp/aws_iam_role/latest/docs/resources/resource) | resource |
-| [aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws_iam_role_policy_attachment/latest/docs/resources/resource) | resource |
-| [aws_codebuild_project](https://registry.terraform.io/providers/hashicorp/aws_codebuild_project/latest/docs/resources/resource) | resource |
-
+| [aws_codebuild_project.stress_runner](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_project) | resource |
+| [aws_lambda_function.stress_runner](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
+| [aws_lambda_layer_version.lambda_layer_stress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
 
 ## Inputs
 
-No inputs.
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_app_name"></a> [app\_name](#input\_app\_name) | n/a | `string` | n/a | yes |
+| <a name="input_env_type"></a> [env\_type](#input\_env\_type) | n/a | `string` | n/a | yes |
+| <a name="input_environment_variables"></a> [environment\_variables](#input\_environment\_variables) | n/a | `map(string)` | `{}` | no |
+| <a name="input_environment_variables_parameter_store"></a> [environment\_variables\_parameter\_store](#input\_environment\_variables\_parameter\_store) | n/a | `map(string)` | <pre>{<br>  "ADO_PASSWORD": "/app/ado_password",<br>  "ADO_USER": "/app/ado_user"<br>}</pre> | no |
+| <a name="input_jmeter_version"></a> [jmeter\_version](#input\_jmeter\_version) | n/a | `string` | `"5.5"` | no |
+| <a name="input_jmx_file_path"></a> [jmx\_file\_path](#input\_jmx\_file\_path) | n/a | `string` | `""` | no |
+| <a name="input_privileged_mode"></a> [privileged\_mode](#input\_privileged\_mode) | set to true if building a docker | `bool` | `true` | no |
+| <a name="input_role"></a> [role](#input\_role) | n/a | `string` | n/a | yes |
+| <a name="input_threshold"></a> [threshold](#input\_threshold) | n/a | `number` | `0` | no |
 
 ## Outputs
-No outputs.
 
+No outputs.
+<!-- END_TF_DOCS -->
