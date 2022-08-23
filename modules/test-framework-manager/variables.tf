@@ -51,6 +51,11 @@ variable "jmx_file_path" {
     default = ""
 }
 
+variable "threshold" {
+  type = number
+  default = 0
+}
+
 variable "test_env_var_overrides" {
   type        = map(string)
   description = "Values to set or override in the Postman test environment."

@@ -155,6 +155,7 @@ module "stress_runner" {
   source = "../stress-runner"
   app_name = var.app_name
   env_type = var.env_type
+  threshold = var.threshold
   role     = aws_iam_role.test_framework.arn
   jmx_file_path = var.jmx_file_path
   environment_variables = local.lambda_env_variables

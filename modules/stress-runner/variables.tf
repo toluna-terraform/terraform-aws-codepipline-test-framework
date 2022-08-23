@@ -37,3 +37,8 @@ variable "jmeter_version" {
   type = string
   default = "5.5"
 }
+
+variable "threshold" {
+  type = number
+  default = 0
+}

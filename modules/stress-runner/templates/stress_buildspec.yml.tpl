@@ -37,12 +37,12 @@ phases:
                   <xsl:value-of select="count(httpSample)" />
                 </xsl:attribute>
                 <xsl:attribute name="failures">
-                  <xsl:variable name="faildItems" select="httpSample/attributes/s[@value='false']" />
-                  <xsl:value-of select="count(\$faildItems)" />
+                  <xsl:variable name="failures" select="./httpSample[@s='false']" />
+                  <xsl:value-of select="count(\$failures)" />
                 </xsl:attribute>
                 <xsl:attribute name="errors">
-                  <xsl:variable name="faildItems" select="httpSample/attributes/s[@value='false']" />
-                  <xsl:value-of select="count(\$faildItems)" />
+                  <xsl:variable name="errors" select="./httpSample[@s='false']" />
+                  <xsl:value-of select="count(\$errors)" />
                 </xsl:attribute>
                 <xsl:attribute name="time">
                   <xsl:variable name="totalTime" select="sum(./httpSample[*]/@lt) div 1000" />
@@ -105,8 +105,16 @@ phases:
   post_build:
     commands:
       - xsltproc -o report.xml jtl2junit.xsl /tmp/${app_name}-${env_type}.xml
-      - echo "Need to parse result and set StressResults"
-      - aws lambda invoke --function-name poc-ecs-dotnet-non-prod-test-framework-manager --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":true }" /dev/null
+      - |
+        FAILS=$(xmllint --xpath "//testsuite/@failures" report.xml | sed -e 's/^[^"]*"//' -e 's/"$//')
+        TOTALS=$(xmllint --xpath "//testsuite/@tests" report.xml | sed -e 's/^[^"]*"//' -e 's/"$//')
+        PASS_RATE=$(( 100 - $(( 100*$FAILS/$TOTALS)) ))
+        if [ "$PASS_RATE" -gt "${threshold}" ]; then
+          export STRESS_RESULT=true
+        else 
+          export STRESS_RESULT=false
+        fi
+      - aws lambda invoke --function-name poc-ecs-dotnet-non-prod-test-framework-manager --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
 reports:
   $REPORT_GROUP:
     files:
