@@ -14,30 +14,18 @@ const tmpDir = process.env.TMP_DIR || os.tmpdir();
 let newmanRunFailed = false;
 let test_status = "SUCCESSFUL";
 let deploymentId;
-let combinedRunner;
-let hookId;
 let lb_dns_name;
 let environment;
 let report_group;
-let run_stress_tests;
 let error;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
   deploymentId = event.deploymentId;
-  combinedRunner = event.Combined;
-  hookId = event.hookId;
   lb_dns_name = event.lb_name;
   environment = event.environment;
   report_group = event.report_group;
-  
-  if (deploymentId) {
-    console.log(`After postman tests are complete, this will update the CodeDeploy deployment ${deploymentId}.`);
-  } else if (combinedRunner) {
-    console.log(`After postman tests are complete, this will return a pass/fail to the combined runner: ${combinedRunner}`);
-  } else {
-    console.log('No DeploymentId found in event, this will execute the postman tests and then exit.');
-  }
+
   try {
     const postmanCollections = process.env.POSTMAN_COLLECTIONS;
     if (!postmanCollections) {

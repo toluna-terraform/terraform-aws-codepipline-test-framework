@@ -12,12 +12,11 @@ let integration_report_group_arn;
 let stress_report_group_arn;
 let runIntegrationTests;
 let runStressTests;
-let details;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
   deploymentId = event.DeploymentId;
-  lifecycleEventHookExecutionId = event.lifecycleEventHookExecutionId;
+  lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
   let IntegResults = event.IntegResults;
   let StressResults = event.StressResults;
@@ -29,52 +28,61 @@ exports.handler = function (event, context, callback) {
     StressResults = true;
   }
   
-  try {
-  sleep(parseInt(process.env.ALB_WAIT_TIME,10) * 1000).then(
-  getDeploymentDetails()
-  .then(
-    function(value){
-      getLBDetails(value).then(function(loadbalancerName){app_config['LB_NAME'] = loadbalancerName});
-      getReportGroupDetails(value).then(function(reportGroups){app_config['REPORT_GROUPS'] = reportGroups});
-      getConsulAddress(value).then(
-        function(value){
-          getConsulToken(value).then(
-            function(value){
-              getConsulConfig(value.address,value.token,value.deploy_details.environment).then(
-                function(configDetails){
-                   app_config['CONFIG_DETAILS'] =  configDetails;
-                   console.log(app_config);
-                    if (app_config['CONFIG_DETAILS'].run_integration_tests) {
-                          runIntegrationTest(app_config).then(
-                            function(result){
-                              result = JSON.parse(result)
-                              if(result.status === 'SUCCESSFUL' && app_config['CONFIG_DETAILS'].run_stress_tests) {
-                                console.log('Integration tests passed, now starting Stress tests');
-                              } else if (result.status === 'SUCCESSFUL' && !app_config['CONFIG_DETAILS'].run_stress_tests) {
-                                console.log('update deploy success');
-                              } else {
-                                console.log('update deploy failed');
+  if (event.UpdateReport && event.StressResults){
+    updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, false); 
+  } else if (event.UpdateReport && !event.StressResults) {
+    updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, true); 
+  } else {
+    try {
+    sleep(parseInt(process.env.ALB_WAIT_TIME,10) * 1000).then(
+    getDeploymentDetails()
+    .then(
+      function(value){
+        getLBDetails(value).then(function(loadbalancerName){app_config['LB_NAME'] = loadbalancerName});
+        getReportGroupDetails(value).then(function(reportGroups){app_config['REPORT_GROUPS'] = reportGroups});
+        getConsulAddress(value).then(
+          function(value){
+            getConsulToken(value).then(
+              function(value){
+                getConsulConfig(value.address,value.token,value.deploy_details.environment).then(
+                  function(configDetails){
+                     app_config['CONFIG_DETAILS'] =  configDetails;
+                     console.log(app_config);
+                      if (app_config['CONFIG_DETAILS'].run_integration_tests) {
+                            runIntegrationTest(app_config).then(
+                              function(result){
+                                result = JSON.parse(result);
+                                if(result.status === 'SUCCESSFUL' && app_config['CONFIG_DETAILS'].run_stress_tests) {
+                                  console.log('Integration tests passed, now starting Stress tests');
+                                  runStressTest(app_config);
+                                } else if (result.status === 'SUCCESSFUL' && !app_config['CONFIG_DETAILS'].run_stress_tests) {
+                                  console.log(`update deploy success:::${deploymentId}, ${combinedRunner}, ${lifecycleEventHookExecutionId},${event}, false`);
+                                  updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, false); 
+                                } else {
+                                  console.log(`update deploy fail:::${deploymentId}, ${combinedRunner}, ${lifecycleEventHookExecutionId},${event}, false`);
+                                  updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, true); 
+                                }
                               }
-                            }
-                            )
-
-                    }
-                    else if (app_config['CONFIG_DETAILS'].run_stress_tests) {
-                        //  runStressTest();
-                        //parse result if failed, fail deploy
-                        console.log("STRESS:::::");
+                              );
+  
                       }
-                }
-              );
-            }
-          );
-        }
-      );
+                      else if (app_config['CONFIG_DETAILS'].run_stress_tests) {
+                          //  runStressTest();
+                          //parse result if failed, fail deploy
+                          console.log("STRESS:::::");
+                        }
+                  }
+                );
+              }
+            );
+          }
+        );
+      }
+    ));
+    } catch (error) {
+      updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, true); 
+      throw error;
     }
-  ));
-  } catch (error) {
-    updateRunner(deploymentId, combinedRunner, event, error);
-    throw error;
   }
 };
 
@@ -82,13 +90,13 @@ async function runIntegrationTest(app_config) {
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`,
     InvocationType: "RequestResponse",
-    Payload: JSON.stringify({ hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}` , report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME'].concat(":4443")}` })
+    Payload: JSON.stringify({ deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}` , report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME'].concat(":4443")}` })
   };
   return await new Promise((resolve, reject) => {
   setTimeout(function() {
   lambda.invoke(params, function (err, data) {
     if (err) {
-        console.log(`integration tests failed with error:${err}`)
+        console.log(`integration tests failed with error:${err}`);
         reject(err, err.stack);
       }// an error occurred
     else {
@@ -102,23 +110,19 @@ async function runIntegrationTest(app_config) {
 
 function runStressTest(app_config) {
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner"`,
+    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`,
     InvocationType: "Event",
-    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,repo: `${app_config['CONFIG_DETAILS'].repo}`, branch: `${app_config['CONFIG_DETAILS'].branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
+    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}`,repo: `${app_config['CONFIG_DETAILS'].repo}`, branch: `${app_config['CONFIG_DETAILS'].branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
   };
-  
-  
   
   lambda.invoke(params, function (err, data) {
     if (err) console.log(err, err.stack); // an error occurred
     else console.log(data);           // successful response
   });
   
-  
-  
 }
 
-async function updateRunner(deploymentId, combinedRunner, event, error) {
+async function updateRunner(deploymentId, combinedRunner,lifecycleEventHookExecutionId, event, error) {
   if (deploymentId) {
     console.log('starting to update CodeDeploy lifecycle event hook status...');
     const params = {
@@ -126,13 +130,17 @@ async function updateRunner(deploymentId, combinedRunner, event, error) {
       lifecycleEventHookExecutionId: lifecycleEventHookExecutionId,
       status: error ? 'Failed' : 'Succeeded'
     };
-    try {
-      const data = await cd.putLifecycleEventHookExecutionStatus(params).promise();
-      console.log(data);
-    } catch (err) {
-      console.log(err, err.stack);
-      throw err;
-    }
+    return await new Promise((resolve, reject) => {
+      setTimeout(function() {
+      cd.putLifecycleEventHookExecutionStatus(params, function (err, data) {
+        if (err) {
+          console.log(err, err.stack); // an error occurred
+          reject(err, err.stack);
+        } 
+        resolve(data);
+      });
+      },1000);
+    });
   } else if (combinedRunner) {
     return {
       passed: !error

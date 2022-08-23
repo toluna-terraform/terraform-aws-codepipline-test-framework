@@ -84,7 +84,7 @@ resource "aws_lambda_function" "integration_runner" {
   handler       = "integration_runner.handler"
   runtime       = "nodejs16.x"
   layers = [aws_lambda_layer_version.lambda_layer_integration.arn]
-  timeout       = 180
+  timeout       = 900
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
   environment {
     variables = local.lambda_env_variables

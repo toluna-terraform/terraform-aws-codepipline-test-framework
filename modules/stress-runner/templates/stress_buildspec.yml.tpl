@@ -18,7 +18,7 @@ phases:
       - source ~/.bashrc
       - chmod +x -R /root/apache-jmeter-${jmeter_version}
       - $JMETER_HOME/bin/jmeter -v
-      - BASE_URL=$(aws elbv2 describe-load-balancers --name $LB_NAME --query 'LoadBalancers[0].DNSName' --output text)
+      - BASE_URL=$LB_NAME
       - | 
         tee -a jtl2junit.xsl <<EOF
         <?xml version="1.0"?>
@@ -106,7 +106,7 @@ phases:
     commands:
       - xsltproc -o report.xml jtl2junit.xsl /tmp/${app_name}-${env_type}.xml
       - echo "Need to parse result and set StressResults"
-      - aws lambda invoke --function-name poc-ecs-dotnet-non-prod-test-framework-manager --invocation-type Event --payload '{ "hookId":"$HOOK_ID", "deploymentId":"$DEPLOYMENT_ID","UpdateReport":true, "StressResults":true }' /dev/null
+      - aws lambda invoke --function-name poc-ecs-dotnet-non-prod-test-framework-manager --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":true }" /dev/null
 reports:
   $REPORT_GROUP:
     files:

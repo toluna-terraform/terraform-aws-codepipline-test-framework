@@ -22,15 +22,6 @@ exports.handler = function (event, context, callback) {
   repo = event.repo;
   branch = event.branch;
 
-
-  if (deploymentId) {
-    console.log(`After stress tests are complete, this will update the CodeDeploy deployment ${deploymentId}.`);
-  } else if (combinedRunner) {
-    console.log(`After stress tests are complete, this will return a pass/fail to the combined runner: ${combinedRunner}`);
-  } else {
-    console.log('No DeploymentId found in event, this will execute the stress tests and then exit.');
-  }
-
   let error;
   try {
     console.log('starting stress tests ...');
@@ -44,7 +35,7 @@ exports.handler = function (event, context, callback) {
   }
 };
 
-function runStressTests(environment, deploymentId) {
+function runStressTests(lb_dns_name, environment, deploymentId) {
   const cbParams = {
     projectName: `codebuild-stress-runner-${process.env.APP_NAME}-${process.env.ENV_TYPE}`,
     privilegedModeOverride: true,

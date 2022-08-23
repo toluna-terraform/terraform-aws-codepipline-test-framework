@@ -22,7 +22,7 @@ resource "aws_lambda_function" "test_framework" {
   handler          = "test_framework_manager.handler"
   runtime          = "nodejs16.x"
   layers           = [aws_lambda_layer_version.lambda_layer.arn]
-  timeout          = 180
+  timeout          = 900
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
   environment {
     variables = local.lambda_env_variables
