@@ -42,3 +42,9 @@ variable "threshold" {
   type = number
   default = 0
 }
+
+variable "stress_tests_bucket" {
+  type        = string
+  description = "S3 Bucket name for the S3 Bucket this module will upload the jmx test file"
+  default     = null
+}

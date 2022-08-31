@@ -8,6 +8,49 @@ locals {
   }
 }
 
+resource "aws_s3_bucket" "tests_bucket" {
+  force_destroy = true
+  bucket        = "${var.app_name}-${var.env_type}-tests"
+}
+
+resource "aws_s3_bucket_acl" "tests_bucket" {
+  bucket = aws_s3_bucket.tests_bucket.id
+  acl    = "private"
+    depends_on = [
+      aws_s3_bucket.tests_bucket
+    ]
+}
+
+resource "aws_s3_bucket_versioning" "postests_buckettman_bucket" {
+  bucket = aws_s3_bucket.tests_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+  depends_on = [
+      aws_s3_bucket.tests_bucket
+    ]
+}
+
+resource "aws_s3_bucket_public_access_block" "tests_bucket" {
+  bucket = aws_s3_bucket.tests_bucket.id
+  block_public_acls   = true
+  block_public_policy = true
+  ignore_public_acls  = true
+  restrict_public_buckets = true
+    depends_on = [
+      aws_s3_bucket.tests_bucket
+    ]
+}
+
+resource "aws_s3_bucket_policy" "postman_bucket" {
+  bucket = aws_s3_bucket.tests_bucket.id
+  policy = data.aws_iam_policy_document.tests_bucket.json
+    depends_on = [
+      aws_s3_bucket.tests_bucket
+    ]
+}
+
+
 resource "aws_lambda_layer_version" "lambda_layer" {
   filename            = "${path.module}/layer/layer.zip"
   layer_name          = "postman"
@@ -47,6 +90,7 @@ resource "aws_iam_role" "test_framework" {
           "s3.amazonaws.com",
           "codedeploy.amazonaws.com",
           "codebuild.amazonaws.com",
+          "codepipeline.amazonaws.com",
           "lambda.amazonaws.com"
         ]
       },
@@ -133,7 +177,7 @@ resource "aws_codebuild_project" "tests_reports" {
 
 resource "aws_iam_role" "codebuild_role" {
   name = "role-${local.codebuild_name}"
-  assume_role_policy = data.aws_iam_policy_document.codebuild_assume_role_policy.json
+  assume_role_policy = aws_iam_role.test_framework.assume_role_policy
 }
 
 resource "aws_iam_role_policy" "codebuild_policy" {
@@ -147,6 +191,7 @@ module "integration_runner" {
   app_name = var.app_name
   env_type = var.env_type
   role     = aws_iam_role.test_framework.arn
+  integration_tests_bucket = aws_s3_bucket.tests_bucket.bucket
   postman_collections = var.postman_collections
   environment_variables = local.lambda_env_variables
 }
@@ -157,6 +202,7 @@ module "stress_runner" {
   env_type = var.env_type
   threshold = var.threshold
   role     = aws_iam_role.test_framework.arn
+  stress_tests_bucket = aws_s3_bucket.tests_bucket.bucket
   jmx_file_path = var.jmx_file_path
   environment_variables = local.lambda_env_variables
 }

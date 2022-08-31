@@ -19,6 +19,7 @@ phases:
       - chmod +x -R /root/apache-jmeter-${jmeter_version}
       - $JMETER_HOME/bin/jmeter -v
       - BASE_URL=$LB_NAME
+      - PORT=$PORT
       - | 
         tee -a jtl2junit.xsl <<EOF
         <?xml version="1.0"?>
@@ -99,12 +100,13 @@ phases:
           </xsl:template>
         </xsl:stylesheet>
         EOF
+        aws s3 cp s3://${stress_tests_bucket}/stress-tests/ /tmp/stress --recursive
   build:
     commands:
-        - $JMETER_HOME/bin/jmeter -n -t ${jmx_file_path} -JbaseURL=$BASE_URL -Jtest_name=/tmp/${app_name}-${env_type}
+        - $JMETER_HOME/bin/jmeter -n -t /tmp/stress/${jmx_file_path} -JbaseURL=$BASE_URL -Jport=$PORT -Jtest_name=/tmp/stress/${app_name}-${env_type}
   post_build:
     commands:
-      - xsltproc -o report.xml jtl2junit.xsl /tmp/${app_name}-${env_type}.xml
+      - xsltproc -o report.xml jtl2junit.xsl /tmp/stress/${app_name}-${env_type}.xml
       - |
         FAILS=$(xmllint --xpath "//testsuite/@failures" report.xml | sed -e 's/^[^"]*"//' -e 's/"$//')
         TOTALS=$(xmllint --xpath "//testsuite/@tests" report.xml | sed -e 's/^[^"]*"//' -e 's/"$//')
@@ -114,7 +116,7 @@ phases:
         else 
           export STRESS_RESULT=false
         fi
-      - aws lambda invoke --function-name poc-ecs-dotnet-non-prod-test-framework-manager --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
+      - aws lambda invoke --function-name $CODEBUILD_INITIATOR --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
 reports:
   $REPORT_GROUP:
     files:

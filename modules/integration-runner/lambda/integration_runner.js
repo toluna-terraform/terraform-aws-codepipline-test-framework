@@ -170,7 +170,7 @@ async function downloadFileFromBucket(env_name, key) {
   // Stripping relative path off of key.
   key = path.basename(key);
   const filename = `${tmpDir}${sep}${key}`;
-  key = `${bucket_env_name}/${key}`;
+  key = `integration_tests/${bucket_env_name}/${key}`;
   console.log(`started download for ${key} from s3 bucket`);
 
   let data;

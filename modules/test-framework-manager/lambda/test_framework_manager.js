@@ -112,7 +112,7 @@ function runStressTest(app_config) {
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`,
     InvocationType: "Event",
-    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}`,repo: `${app_config['CONFIG_DETAILS'].repo}`, branch: `${app_config['CONFIG_DETAILS'].branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
+    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests ,hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}`, branch: `${app_config['CONFIG_DETAILS'].branch}`, report_group: `${stress_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
   };
   
   lambda.invoke(params, function (err, data) {
@@ -303,7 +303,6 @@ async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN,ENVIRONMENT){
         configMap['run_integration_tests'] = selectedEnv.run_integration_tests;
       }
       configMap['branch'] = selectedEnv.pipeline_branch;
-      configMap['repo'] = selectedEnv.pipeline_repo;
       configMap['environment'] = ENVIRONMENT;
       resolve(configMap);
   });

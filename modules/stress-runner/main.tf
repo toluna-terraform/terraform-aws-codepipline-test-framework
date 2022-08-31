@@ -36,7 +36,7 @@ resource "aws_codebuild_project" "stress_runner" {
   source {
     type     = "NO_SOURCE"
     buildspec = templatefile("${path.module}/templates/stress_buildspec.yml.tpl", 
-  {  app_name = var.app_name, env_type = var.env_type,jmx_file_path = var.jmx_file_path, jmeter_version = var.jmeter_version,threshold = var.threshold })
+  {  app_name = var.app_name, env_type = var.env_type,stress_tests_bucket = var.stress_tests_bucket,jmx_file_path = var.jmx_file_path, jmeter_version = var.jmeter_version,threshold = var.threshold })
   }
 
     tags = tomap({

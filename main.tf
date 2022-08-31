@@ -3,7 +3,7 @@ module "test_framework_manager" {
   app_name = var.app_name
   env_type = var.env_type
   codebuild_name                        = "tests-reports-${var.app_name}"
-  s3_bucket                             = "${var.app_name}-${var.env_type}-postman-tests"
+  s3_bucket                             = "${var.app_name}-${var.env_type}-tests"
   privileged_mode                       = true
   environment_variables_parameter_store = var.environment_variables_parameter_store
   postman_collections = var.postman_collections

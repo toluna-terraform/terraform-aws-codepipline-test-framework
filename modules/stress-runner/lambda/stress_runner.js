@@ -8,8 +8,6 @@ let hookId;
 let lb_dns_name;
 let environment;
 let report_group;
-let repo;
-let branch;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
@@ -17,10 +15,9 @@ exports.handler = function (event, context, callback) {
   combinedRunner = event.Combined;
   hookId = event.hookId;
   lb_dns_name = event.lb_name;
+  port = event.port;
   environment = event.environment;
   report_group = event.report_group;
-  repo = event.repo;
-  branch = event.branch;
 
   let error;
   try {
@@ -29,9 +26,16 @@ exports.handler = function (event, context, callback) {
       runStressTests(lb_dns_name, environment, deploymentId)
     }
   }
-  catch {
+  catch (err) {
     //update the test manage with error
-    updateTestManager(false);
+    var response = {
+      statusCode: '400',
+      errorType: 'string',
+      errorMessage: `${err}`,
+      status: 'FAILED'
+    }
+    callback(null, response);
+    callback
   }
 };
 
@@ -43,6 +47,11 @@ function runStressTests(lb_dns_name, environment, deploymentId) {
       {
         name: 'LB_NAME',
         value: `${lb_dns_name}`,
+        type: 'PLAINTEXT'
+      },
+      {
+        name: 'PORT',
+        value: `${port}`,
         type: 'PLAINTEXT'
       },
       {
@@ -65,27 +74,12 @@ function runStressTests(lb_dns_name, environment, deploymentId) {
         value: `${hookId}`,
         type: 'PLAINTEXT'
       },
-    ],
-    sourceVersion: `${branch}`,
-    sourceTypeOverride: "BITBUCKET",
-    sourceLocationOverride: `https://bitbucket.org/${repo}.git`
+    ]
   };
   cb.startBuild(cbParams, function (err, data) {
     if (err) {
       throw err;
     }
     console.log(`Started codebuild-stress-runner-${process.env.APP_NAME}-${process.env.ENV_TYPE}`);
-  });
-}
-
-function updateTestManager(result) {
-  var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-test-framework-manager"`,
-    InvocationType: "Event",
-    Payload: JSON.stringify({ hookId: `${hookId}`, deploymentId: `${deploymentId}`, UpdateReport: true, IntegResults: result })
-  };
-  lambda.invoke(params, function (err, data) {
-    if (err) console.log(err, err.stack); // an error occurred
-    else console.log(data);           // successful response
   });
 }
