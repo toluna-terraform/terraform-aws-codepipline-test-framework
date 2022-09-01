@@ -30,3 +30,13 @@ variable "postman_collections" {
   }))
   description = "A list of postman collections (and environments) to run during the execution of the lambda function (in order). Collections and environments from the Postman API must be the collection/environment id"
 }
+
+variable "jmx_file_path" {
+    type = string
+    default = ""
+}
+
+variable "jmeter_version" {
+  type = string
+  default = "5.5"
+}

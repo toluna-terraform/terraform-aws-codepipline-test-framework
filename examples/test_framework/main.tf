@@ -9,4 +9,5 @@ module "test_framework" {
     environment = "postman_environment.json"
   }
   ]
+  jmx_file_path = "tests/stress_tests/mytest.jmx"
 }

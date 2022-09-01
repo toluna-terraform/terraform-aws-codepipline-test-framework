@@ -102,7 +102,7 @@ func TestBucketPolicy(t *testing.T) {
 }
 
 func TestTerraformInvokeRunnerLambda(t *testing.T) {
-	log.Println("invoking test-runner Lambda")
+	log.Println("invoking integration-runner Lambda")
 	tolunacoverage.MarkAsCovered("aws_lambda_function.test_framework", moduleName)
 	var invocationType aws_terratest.InvocationTypeOption = aws_terratest.InvocationTypeRequestResponse
 	input := &aws_terratest.LambdaOptions{
@@ -115,7 +115,7 @@ func TestTerraformInvokeRunnerLambda(t *testing.T) {
 }
 
 func TestTerraformRunnerLambdaLayer(t *testing.T) {
-	log.Println("Verify test-runner Lambda layer")
+	log.Println("Verify integration-runner Lambda layer")
 	tolunacoverage.MarkAsCovered("aws_lambda_layer_version.lambda_layer", moduleName)
 	result := tolunalambdaaws.GetLambdaLayer(t, region, "postman", 1)
 	assert.True(t, strings.HasSuffix(*result.LayerArn, "layer:postman"), "Wrong Layer ARN returned")
