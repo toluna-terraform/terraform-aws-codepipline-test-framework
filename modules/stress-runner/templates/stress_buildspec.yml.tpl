@@ -20,6 +20,7 @@ phases:
       - $JMETER_HOME/bin/jmeter -v
       - BASE_URL=$LB_NAME
       - PORT=$PORT
+      - TRIGGER=$TRIGGER
       - | 
         tee -a jtl2junit.xsl <<EOF
         <?xml version="1.0"?>
@@ -116,7 +117,7 @@ phases:
         else 
           export STRESS_RESULT=false
         fi
-      - aws lambda invoke --function-name $CODEBUILD_INITIATOR --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
+      - aws lambda invoke --function-name $TRIGGER --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
 reports:
   $REPORT_GROUP:
     files:

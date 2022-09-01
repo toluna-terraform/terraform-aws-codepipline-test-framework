@@ -8,7 +8,6 @@ const path = require('path');
 const AdmZip = require("adm-zip");
 const s3 = new AWS.S3({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cb = new AWS.CodeBuild({ apiVersion: '2016-10-06', region: 'us-east-1' });
-const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 
 const tmpDir = process.env.TMP_DIR || os.tmpdir();
 let newmanRunFailed = false;
@@ -197,13 +196,13 @@ function newmanRun(options, environment, deploymentId) {
         if (err) {
           reject(err);
         }
-        else if (JSON.stringify(args.summary.error) || args.summary.run.failures.length) {
-           newmanRunFailed = true;
-           reject("collection run encountered errors or test failures");
-        }
       })
       .on('done', function (err, args) {
-        if (err) {
+        if (args.run.error || args.run.failures.length) {
+           newmanRunFailed = true;
+           resolve("collection run encountered errors or test failures !!!");
+        }
+        else if (err) {
           console.log(err);
           reject(err);
         } else {

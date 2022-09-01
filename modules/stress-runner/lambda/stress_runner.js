@@ -6,6 +6,8 @@ let deploymentId;
 let combinedRunner;
 let hookId;
 let lb_dns_name;
+let port;
+let trigger;
 let environment;
 let report_group;
 
@@ -16,6 +18,7 @@ exports.handler = function (event, context, callback) {
   hookId = event.hookId;
   lb_dns_name = event.lb_name;
   port = event.port;
+  trigger = event.trigger;
   environment = event.environment;
   report_group = event.report_group;
 
@@ -72,6 +75,11 @@ function runStressTests(lb_dns_name, environment, deploymentId) {
       {
         name: 'HOOK_ID',
         value: `${hookId}`,
+        type: 'PLAINTEXT'
+      },
+      {
+        name: 'TRIGGER',
+        value: `${trigger}`,
         type: 'PLAINTEXT'
       },
     ]
