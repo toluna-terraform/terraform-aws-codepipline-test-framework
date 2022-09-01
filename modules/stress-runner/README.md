@@ -33,6 +33,7 @@ No modules.
 | <a name="input_jmx_file_path"></a> [jmx\_file\_path](#input\_jmx\_file\_path) | n/a | `string` | `""` | no |
 | <a name="input_privileged_mode"></a> [privileged\_mode](#input\_privileged\_mode) | set to true if building a docker | `bool` | `true` | no |
 | <a name="input_role"></a> [role](#input\_role) | n/a | `string` | n/a | yes |
+| <a name="input_stress_tests_bucket"></a> [stress\_tests\_bucket](#input\_stress\_tests\_bucket) | S3 Bucket name for the S3 Bucket this module will upload the jmx test file | `string` | `null` | no |
 | <a name="input_threshold"></a> [threshold](#input\_threshold) | n/a | `number` | `0` | no |
 
 ## Outputs
