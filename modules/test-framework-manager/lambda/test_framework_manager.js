@@ -27,7 +27,6 @@ exports.handler = function (event, context, callback) {
   if (!runStressTests) {
     StressResults = true;
   }
-  updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, true); 
   if (event.UpdateReport && event.StressResults){
     updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, false); 
   } else if (event.UpdateReport && !event.StressResults) {
