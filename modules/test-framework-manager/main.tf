@@ -4,6 +4,7 @@ locals {
   lambda_env_variables = {
     APP_NAME               = var.app_name
     ENV_TYPE               = var.env_type
+    DOMAIN                 = var.domain
     TEST_ENV_VAR_OVERRIDES = jsonencode(var.test_env_var_overrides)
   }
 }

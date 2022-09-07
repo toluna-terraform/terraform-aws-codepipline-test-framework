@@ -2,6 +2,7 @@ module "test_framework_manager" {
   source = "./modules/test-framework-manager"
   app_name = var.app_name
   env_type = var.env_type
+  domain = var.domain
   codebuild_name                        = "tests-reports-${var.app_name}"
   s3_bucket                             = "${var.app_name}-${var.env_type}-tests"
   privileged_mode                       = true

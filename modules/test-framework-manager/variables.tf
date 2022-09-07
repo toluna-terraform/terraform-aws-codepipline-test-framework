@@ -61,3 +61,7 @@ variable "test_env_var_overrides" {
   description = "Values to set or override in the Postman test environment."
   default     = {}
 }
+
+variable "domain" {
+  type = string
+}
