@@ -27,7 +27,7 @@ exports.handler = function (event, context, callback) {
   if (!runStressTests) {
     StressResults = true;
   }
-  
+  updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, true); 
   if (event.UpdateReport && event.StressResults){
     updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, false); 
   } else if (event.UpdateReport && !event.StressResults) {
@@ -90,7 +90,7 @@ async function runIntegrationTest(app_config) {
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`,
     InvocationType: "RequestResponse",
-    Payload: JSON.stringify({ deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}` , report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME'].concat(":4443")}` })
+    Payload: JSON.stringify({ deploymentId: `${deploymentId}`,environment: `${app_config['CONFIG_DETAILS'].environment}` , report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
   };
   return await new Promise((resolve, reject) => {
   setTimeout(function() {
@@ -151,7 +151,7 @@ async function updateRunner(deploymentId, combinedRunner,lifecycleEventHookExecu
 }
 
 async function getDeploymentDetails(){
-  let lb_env_name,environment;
+  let lb_env_name,environment,deploy_type;
   var params = {
     deploymentId: deploymentId,
   };
@@ -165,12 +165,14 @@ async function getDeploymentDetails(){
         else {
           console.log(data);
           if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')) {
+            deploy_type = "ECS"
             lb_env_name = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
             environment = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
             environment = environment.replace("-green", "");
             environment = environment.replace("-blue", "");
           }
           if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
+            deploy_type = "LAMBDA"
             if (data.deploymentInfo.applicationName.includes('serverlessrepo')) {
               lb_env_name = data.deploymentInfo.applicationName.split("-")[2];
               environment = data.deploymentInfo.applicationName.split("-")[2];
@@ -178,11 +180,6 @@ async function getDeploymentDetails(){
               lb_env_name = data.deploymentInfo.applicationName.split("-")[1];
               environment = data.deploymentInfo.applicationName.split("-")[1];
             }
-             if (data.deploymentInfo.applicationName.includes('-green')) {
-               lb_env_name = `${lb_env_name}-green`
-             } else if (data.deploymentInfo.applicationName.includes('-blue')) {
-               lb_env_name = `${lb_env_name}-blue`
-             }
               environment = environment.replace("-green", "");
               environment = environment.replace("-blue", "");
           }
@@ -190,7 +187,7 @@ async function getDeploymentDetails(){
     if (deploy_status == "Failed") {
       reject(`deploy_status = ${deploy_status}`);
     }
-    resolve({"lb_env_name":lb_env_name,"environment":environment});
+    resolve({"lb_env_name":lb_env_name,"environment":environment,"deploy_type":deploy_type});
         }// successful response
       });
     },1000);
@@ -214,7 +211,12 @@ async function getLBDetails(deploy_details){
         }
         else {
          // console.log(data);
-          lb_dns_name = `${data.LoadBalancers[0].DNSName}`;
+          if (deploy_details.deploy_type == "ECS"){
+            lb_dns_name = `${data.LoadBalancers[0].DNSName}:4443`;
+          }
+          else {
+            lb_dns_name = `${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`;
+          }
           resolve(lb_dns_name);
         }// successful response
       })
@@ -236,14 +238,14 @@ async function getReportGroupDetails(deploy_details){
         else {
           var integration_report_group_arns = Object.values(data.reportGroups);
           for (const [key, name] of Object.entries(integration_report_group_arns)) {
-            if (name.endsWith(`${deploy_details.environment}-IntegrationTestReport`)) {
+            if (name.endsWith(`${process.env.APP_NAME}-${deploy_details.environment}-IntegrationTestReport`)) {
               console.log(`Selected Report Group ARN::::${name}`);
               integration_report_group_arn = name;
             }
           }
           var stress_report_group_arns = Object.values(data.reportGroups);
           for (const [key, name] of Object.entries(stress_report_group_arns)) {
-            if (name.endsWith(`${deploy_details.environment}-StressTestReport`)) {
+            if (name.endsWith(`${process.env.APP_NAME}-${deploy_details.environment}-StressTestReport`)) {
               console.log(`Selected Report Group ARN::::${name}`);
               stress_report_group_arn = name;
             }
