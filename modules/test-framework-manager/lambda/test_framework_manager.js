@@ -165,14 +165,27 @@ async function getDeploymentDetails(){
         else {
           console.log(data);
           if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')) {
-      lb_env_name = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
-      environment = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
-      environment = environment.replace("-green", "");
-      environment = environment.replace("-blue", "");
-    }
-    if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
-      environment = data.deploymentInfo.applicationName.split("-")[1];
-    }
+            lb_env_name = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+            environment = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+            environment = environment.replace("-green", "");
+            environment = environment.replace("-blue", "");
+          }
+          if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
+            if (data.deploymentInfo.applicationName.includes('serverlessrepo')) {
+              lb_env_name = data.deploymentInfo.applicationName.split("-")[2];
+              environment = data.deploymentInfo.applicationName.split("-")[2];
+            } else {
+              lb_env_name = data.deploymentInfo.applicationName.split("-")[1];
+              environment = data.deploymentInfo.applicationName.split("-")[1];
+            }
+             if (data.deploymentInfo.applicationName.includes('-green')) {
+               lb_env_name = `${lb_env_name}-green`
+             } else if (data.deploymentInfo.applicationName.includes('-blue')) {
+               lb_env_name = `${lb_env_name}-blue`
+             }
+              environment = environment.replace("-green", "");
+              environment = environment.replace("-blue", "");
+          }
     const deploy_status = data.deploymentInfo.status;
     if (deploy_status == "Failed") {
       reject(`deploy_status = ${deploy_status}`);
