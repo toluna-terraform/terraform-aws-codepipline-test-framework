@@ -40,3 +40,7 @@ variable "jmeter_version" {
   type = string
   default = "5.5"
 }
+
+variable "domain" {
+  type = string
+}
