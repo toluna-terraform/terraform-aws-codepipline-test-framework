@@ -2,6 +2,7 @@ const AWS = require('aws-sdk');
 const Consul = require('consul');
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cb = new AWS.CodeBuild({ apiVersion: '2016-10-06', region: 'us-east-1' });
+const cp = new AWS.CodePipeline({ apiVersion: '2015-07-09', region: 'us-east-1' });
 const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 const ssm = new AWS.SSM({apiVersion: '2014-11-06',region: 'us-east-1'});
@@ -12,10 +13,23 @@ let integration_report_group_arn;
 let stress_report_group_arn;
 let runIntegrationTests;
 let runStressTests;
-
+let deploymentType;
+let env_name;
+let env_color;
 exports.handler = function (event, context, callback) {
   console.log('event', event);
-  deploymentId = event.DeploymentId;
+  if (event.hasOwnProperty("DeploymentId")) {
+    deploymentId = event.DeploymentId;
+    deploymentType = "ECS";
+  }
+  else if (event["CodePipeline.job"].hasOwnProperty("id")) {
+    deploymentId = event["CodePipeline.job"].id;
+    deploymentType = "SAM";
+    console.log('environment', event["CodePipeline.job"].data.actionConfiguration.configuration.UserParameters);
+    const context = event["CodePipeline.job"].data.actionConfiguration.configuration.UserParameters.split(",");
+    env_name = context[0];
+    env_color = context[1];
+  }
   lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
   let IntegResults = event.IntegResults;
@@ -33,7 +47,7 @@ exports.handler = function (event, context, callback) {
     updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId,event, true); 
   } else {
     try {
-    sleep(parseInt(process.env.ALB_WAIT_TIME,10) * 1000).then(
+    sleep(parseInt(process.env.ALB_WAIT_TIME,300) * 1000).then(
     getDeploymentDetails()
     .then(
       function(value){
@@ -123,21 +137,56 @@ function runStressTest(app_config) {
 
 async function updateRunner(deploymentId, combinedRunner,lifecycleEventHookExecutionId, event, error) {
   if (deploymentId) {
-    console.log('starting to update CodeDeploy lifecycle event hook status...');
-    const params = {
+    console.log('starting to update lifecycle event hook status...');
+    return await new Promise((resolve, reject) => {
+      setTimeout(function() {
+      if (deploymentType == "ECS") {
+        const params = {
       deploymentId: deploymentId,
       lifecycleEventHookExecutionId: lifecycleEventHookExecutionId,
       status: error ? 'Failed' : 'Succeeded'
     };
-    return await new Promise((resolve, reject) => {
-      setTimeout(function() {
-      cd.putLifecycleEventHookExecutionStatus(params, function (err, data) {
+          cd.putLifecycleEventHookExecutionStatus(params, function (err, data) {
         if (err) {
           console.log(err, err.stack); // an error occurred
           reject(err, err.stack);
         } 
         resolve(data);
       });
+  }
+else if (deploymentType == "SAM") {
+    if (!error){
+      const params = {
+      jobId: deploymentId,
+    };
+      cp.putJobSuccessResult(params, function(err, data) {
+          if(err) {
+               console.log(err, err.stack); // an error occurred
+          reject(err, err.stack); 
+            } else {
+                resolve(data);  
+            }
+        });
+    } else {
+      const params = {
+      failureDetails: {
+        message: JSON.stringify("Integration Tests Failed"),
+        type: 'JobFailed'
+      },
+      jobId: deploymentId,
+
+    };
+    cp.putJobFailureResult(params, function(err, data) {
+          if(err) {
+               console.log(err, err.stack); // an error occurred
+               reject(err, err.stack); 
+            } else {
+                resolve(data);  
+            }  
+        });
+    }
+  }
+      
       },1000);
     });
   } else if (combinedRunner) {
@@ -155,7 +204,8 @@ async function getDeploymentDetails(){
     deploymentId: deploymentId,
   };
   return await new Promise((resolve, reject) => {
-    setTimeout(function() {
+    if (deploymentType == "ECS") {
+        setTimeout(function() {
       cd.getDeployment(params, function (err, data) {
         if (err) {
           console.log(err, err.stack); // an error occurred
@@ -163,25 +213,12 @@ async function getDeploymentDetails(){
         }
         else {
           console.log(data);
-          if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.ECS')) {
             deploy_type = "ECS"
             lb_env_name = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
             environment = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
             environment = environment.replace("-green", "");
             environment = environment.replace("-blue", "");
-          }
-          if (data.deploymentInfo.deploymentConfigName.includes('CodeDeployDefault.Lambda')) {
-            deploy_type = "LAMBDA"
-            if (data.deploymentInfo.applicationName.includes('serverlessrepo')) {
-              lb_env_name = data.deploymentInfo.applicationName.split("-")[2];
-              environment = data.deploymentInfo.applicationName.split("-")[2];
-            } else {
-              lb_env_name = data.deploymentInfo.applicationName.split("-")[1];
-              environment = data.deploymentInfo.applicationName.split("-")[1];
-            }
-              environment = environment.replace("-green", "");
-              environment = environment.replace("-blue", "");
-          }
+          
     const deploy_status = data.deploymentInfo.status;
     if (deploy_status == "Failed") {
       reject(`deploy_status = ${deploy_status}`);
@@ -190,6 +227,10 @@ async function getDeploymentDetails(){
         }// successful response
       });
     },1000);
+  } else {
+    resolve({"lb_env_name": `${env_name}-${env_color}`,"environment":env_name,"deploy_type":"SAM"});
+  }
+
   });
 }
 
@@ -202,6 +243,7 @@ async function getLBDetails(deploy_details){
     };
   return await new Promise((resolve, reject) => {
     let lb_dns_name;
+    if (deploymentType == "ECS") {
     setTimeout(function() {
       elbv2.describeLoadBalancers(elb_params, function (err, data) {
         if (err) {
@@ -220,6 +262,11 @@ async function getLBDetails(deploy_details){
         }// successful response
       })
     },1000);
+    } else {
+      lb_dns_name = `${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`;
+      console.log(`Setting test host to ${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`)
+      resolve(lb_dns_name);
+    }
   });
 }
 
