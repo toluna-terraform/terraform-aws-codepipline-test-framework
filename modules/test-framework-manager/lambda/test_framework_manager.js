@@ -228,7 +228,9 @@ async function getDeploymentDetails(){
       });
     },1000);
   } else {
-    resolve({"lb_env_name": `${env_name}-${env_color}`,"environment":env_name,"deploy_type":"SAM"});
+    environment = env_name.replace("-green", "");
+    environment = env_name.replace("-blue", "");
+    resolve({"lb_env_name": `${env_name}-${env_color}`,"environment":environment,"deploy_type":"SAM"});
   }
 
   });
@@ -353,15 +355,15 @@ async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN,ENVIRONMENT){
       else if (result === undefined) reject('key not found');
       let app_json = JSON.parse(result.Value);
       let selectedEnv = app_json[`${ENVIRONMENT}`];
-      if ( selectedEnv.run_stress_tests === undefined ) {
-        configMap['run_stress_tests'] = false;
-      } else {
+      try {
         configMap['run_stress_tests'] = selectedEnv.run_stress_tests;
+      } catch {
+        configMap['run_stress_tests'] = false;
       }
-      if ( selectedEnv.run_integration_tests === undefined ) {
-        configMap['run_integration_tests'] = false;
-      } else {
+      try {
         configMap['run_integration_tests'] = selectedEnv.run_integration_tests;
+      } catch {
+        configMap['run_integration_tests'] = false;
       }
       configMap['environment'] = ENVIRONMENT;
       resolve(configMap);
