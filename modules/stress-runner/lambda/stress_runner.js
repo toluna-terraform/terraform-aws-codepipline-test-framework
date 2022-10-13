@@ -10,6 +10,8 @@ let port;
 let trigger;
 let environment;
 let report_group;
+let deploymentType;
+let taskToken;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
@@ -21,6 +23,8 @@ exports.handler = function (event, context, callback) {
   trigger = event.trigger;
   environment = event.environment;
   report_group = event.report_group;
+  deploymentType = event.DeploymentType;
+  taskToken = event.TaskToken;
 
   let error;
   try {
@@ -80,6 +84,16 @@ function runStressTests(lb_dns_name, environment, deploymentId) {
       {
         name: 'TRIGGER',
         value: `${trigger}`,
+        type: 'PLAINTEXT'
+      },
+      {
+        name: 'DEPLOYMENT_TYPE',
+        value: `${deploymentType}`,
+        type: 'PLAINTEXT'
+      },
+      {
+        name: 'TASK_TOKEN',
+        value: `${taskToken}`,
         type: 'PLAINTEXT'
       },
     ]

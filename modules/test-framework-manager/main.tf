@@ -138,6 +138,11 @@ resource "aws_iam_role_policy_attachment" "role-ec2" {
   policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
 }
 
+resource "aws_iam_role_policy_attachment" "attach-sf-access" {
+  role       = aws_iam_role.test_framework.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
+}
+
 resource "aws_codebuild_project" "tests_reports" {
   name          = "${local.codebuild_name}"
   description   = "Build spec for ${local.codebuild_name}"
