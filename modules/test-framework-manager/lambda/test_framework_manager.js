@@ -5,6 +5,7 @@ const cb = new AWS.CodeBuild({ apiVersion: '2016-10-06', region: 'us-east-1' });
 const cp = new AWS.CodePipeline({ apiVersion: '2015-07-09', region: 'us-east-1' });
 const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
+const apigw = new AWS.APIGateway({ apiVersion: '2015-07-09' });
 const ssm = new AWS.SSM({ apiVersion: '2014-11-06', region: 'us-east-1' });
 
 let deploymentId;
@@ -16,6 +17,7 @@ let runStressTests;
 let deploymentType;
 let env_name;
 let env_color;
+let app_config = {};
 exports.handler = function (event, context, callback) {
   console.log('event', event);
   if (event.hasOwnProperty("DeploymentId")) {
@@ -25,7 +27,7 @@ exports.handler = function (event, context, callback) {
   const combinedRunner = event.Combined;
   let IntegResults = event.IntegResults;
   let StressResults = event.StressResults;
-  let app_config = {};
+
   if (!runIntegrationTests) {
     IntegResults = true;
   }
@@ -42,8 +44,8 @@ exports.handler = function (event, context, callback) {
         getDeploymentDetails()
           .then(
             function (value) {
-              getLBDetails(value).then(function (loadbalancerName) { app_config['LB_NAME'] = loadbalancerName });
               getReportGroupDetails(value).then(function (reportGroups) { app_config['REPORT_GROUPS'] = reportGroups });
+              getLBDetails(value).then(function (result) { console.log(`SETTING LB_NAME::::${result}`);app_config['LB_NAME'] = result });
               getConsulAddress(value).then(
                 function (value) {
                   getConsulToken(value).then(
@@ -129,9 +131,11 @@ function runStressTest(app_config) {
 async function updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, error) {
   if (deploymentId) {
     console.log('starting to update lifecycle event hook status...');
+    console.log(`Deployment Type:::${deploymentType}`);
+    console.log(`Pipeline Type:::${app_config['CONFIG_DETAILS'].pipeline_type}`);
     return await new Promise((resolve, reject) => {
       setTimeout(function () {
-        if (deploymentType == "ECS" || deploymentType == "SAM") {
+        if (deploymentType == "ECS" || deploymentType == "SAM" && app_config['CONFIG_DETAILS'].pipeline_type == "dev") {
           const params = {
             deploymentId: deploymentId,
             lifecycleEventHookExecutionId: lifecycleEventHookExecutionId,
@@ -144,6 +148,40 @@ async function updateRunner(deploymentId, combinedRunner, lifecycleEventHookExec
             }
             resolve(data);
           });
+        } else if (deploymentType == "SAM" && app_config['CONFIG_DETAILS'].pipeline_type != "dev") {
+          if (error) {
+            console.log('Updating Deploy Failed, Starting Rollback...');
+            const params = {
+              deploymentId: deploymentId,
+              lifecycleEventHookExecutionId: lifecycleEventHookExecutionId,
+              status: 'Failed'
+            };
+            cd.putLifecycleEventHookExecutionStatus(params, function (err, data) {
+              if (err) {
+                console.log(err, err.stack); // an error occurred
+                reject(err, err.stack);
+              }
+              resolve(data);
+            });
+          }
+          else {
+          // call merge waiter function
+            var params = {
+              FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-merge-waiter`,
+              InvocationType: "RequestResponse",
+              Payload: JSON.stringify({ DeploymentId: `${deploymentId}`, LifecycleEventHookExecutionId: `${lifecycleEventHookExecutionId}`})
+            };
+  
+            lambda.invoke(params, function (err, data) {
+              if (err) {
+                reject(err, err.stack);
+              }// an error occurred
+              else {
+                console.log(data);
+                resolve(data.Payload);
+              }
+            });
+          }  
         }
       }, 1000);
     });
@@ -209,26 +247,42 @@ async function getLBDetails(deploy_details) {
     ],
   };
   return await new Promise((resolve, reject) => {
+    console.log(`Deployment Type::::${deploymentType}`)
     let lb_dns_name;
     if (deploymentType == "ECS") {
-      setTimeout(function () {
-        elbv2.describeLoadBalancers(elb_params, function (err, data) {
+      elbv2.describeLoadBalancers(elb_params, function (err, data) {
+        if (err) {
+          console.log(err, err.stack); // an error occurred
+          reject(err, err.stack);
+        }
+        else {
+          // console.log(data);
+          if (deploy_details.deploy_type == "ECS") {
+            lb_dns_name = `${data.LoadBalancers[0].DNSName}:4443`;
+          }
+          console.log(`Setting test host to ${deploy_details.lb_dns_name}`)
+          resolve(lb_dns_name);
+        }// successful response
+      })
+    } else if (deploymentType == "SAM"){
+        var params = {
+        };
+        apigw.getRestApis(params, function(err, data) {
           if (err) {
             console.log(err, err.stack); // an error occurred
             reject(err, err.stack);
           }
           else {
-            // console.log(data);
-            if (deploy_details.deploy_type == "ECS") {
-              lb_dns_name = `${data.LoadBalancers[0].DNSName}:4443`;
-            }
-            else {
-              lb_dns_name = `${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`;
-            }
+            data.items.forEach((item) => {
+              console.log(`ITEM:::: ${item['name']}:::${item['id']}`)
+              if (item['name'] == `${process.env.APP_NAME}-${deploy_details.environment}` ) {
+                lb_dns_name = `${item['id']}.execute-api.us-east-1.amazonaws.com`
+              }
+            });
+            console.log(`Setting test host to ${lb_dns_name}`)
             resolve(lb_dns_name);
-          }// successful response
-        })
-      }, 1000);
+          }
+        });// successful response         // successful response
     } else {
       lb_dns_name = `${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`;
       console.log(`Setting test host to ${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`)
@@ -329,6 +383,11 @@ async function getConsulConfig(CONSUL_ADDRESS, CONSUL_TOKEN, ENVIRONMENT) {
           configMap['run_integration_tests'] = selectedEnv.run_integration_tests;
         } catch {
           configMap['run_integration_tests'] = false;
+        }
+        try {
+          configMap['pipeline_type'] = selectedEnv.pipeline_type;
+        } catch {
+          configMap['pipeline_type'] = 'dev';
         }
         configMap['environment'] = ENVIRONMENT;
         resolve(configMap);
