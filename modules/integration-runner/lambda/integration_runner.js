@@ -259,14 +259,19 @@ function generateEnvVars() {
   const hostname = JSON.parse(`{ "host":"${lb_dns_name}"}`);
   const accountId = JSON.parse(`{ "account_id":"${account_id}"}`); 
   const parsedEnvVars = JSON.parse(process.env.TEST_ENV_VAR_OVERRIDES);
-  const sessionToken = JSON.parse(process.env.AWS_SESSION_TOKEN);
-  const secretKey = JSON.parse(process.env.AWS_SECRET_ACCESS_KEY);
-  const accessKey = JSON.parse(process.env.AWS_ACCESS_KEY_ID);
-  const parsedVars = Object.assign(hostname,accountId,sessionToken,secretKey,parsedVars, parsedEnvVars);
+  const sessionToken = JSON.parse(`{ "AWS_SESSION_TOKEN":"${process.env.AWS_SESSION_TOKEN}"}`);
+  const secretKey = JSON.parse(`{ "AWS_SECRET_ACCESS_KEY":"${process.env.AWS_SECRET_ACCESS_KEY}"}`);
+  const accessKey = JSON.parse(`{ "AWS_ACCESS_KEY_ID":"${process.env.AWS_ACCESS_KEY_ID}"}`);
+  const parsedVars = Object.assign(hostname,accountId,sessionToken,secretKey,accessKey, parsedEnvVars);
   if (Object.keys(parsedVars).length === 0) return envVarsArray;
   for (const [key, value] of Object.entries(parsedVars)) {
-    console.log(`[Env Override] Setting ${key} as ${value}`);
+    if (!key.startsWith("AWS")) {
+      console.log(`[Env Override] Setting ${key} as ${value}`);
+    } else {
+      console.log(`[Env Override] Setting ${key} as ****`);
+    }
     envVarsArray.push({ key, value });
   }
   return envVarsArray;
 }
+
