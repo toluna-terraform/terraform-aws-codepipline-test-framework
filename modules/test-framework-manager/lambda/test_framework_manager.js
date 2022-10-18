@@ -2,7 +2,6 @@ const AWS = require('aws-sdk');
 const Consul = require('consul');
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cb = new AWS.CodeBuild({ apiVersion: '2016-10-06', region: 'us-east-1' });
-const cp = new AWS.CodePipeline({ apiVersion: '2015-07-09', region: 'us-east-1' });
 const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 const apigw = new AWS.APIGateway({ apiVersion: '2015-07-09' });
@@ -15,8 +14,6 @@ let stress_report_group_arn;
 let runIntegrationTests;
 let runStressTests;
 let deploymentType;
-let env_name;
-let env_color;
 let app_config = {};
 exports.handler = function (event, context, callback) {
   console.log('event', event);

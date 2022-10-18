@@ -16,6 +16,7 @@ let deploymentId;
 let lb_dns_name;
 let environment;
 let report_group;
+let account_id;
 let error;
 
 exports.handler = function (event, context, callback) {
@@ -24,7 +25,7 @@ exports.handler = function (event, context, callback) {
   lb_dns_name = event.lb_name;
   environment = event.environment;
   report_group = event.report_group;
-
+  account_id = context.invokedFunctionArn.split(':')[4];
   try {
     const postmanCollections = process.env.POSTMAN_COLLECTIONS;
     if (!postmanCollections) {
@@ -228,7 +229,8 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
           titleSize: 4,
           showEnvironmentData: true,
           showGlobalData: true,
-          skipSensitiveData: true,
+          skipSensitiveData: false,
+          omitRequestBodies: false,
           showMarkdownLinks: true,
           timezone: "Israel",
         },
@@ -255,8 +257,12 @@ async function runTest(postmanCollection, postmanEnvironment, environment, deplo
 function generateEnvVars() {
   const envVarsArray = [];
   const hostname = JSON.parse(`{ "host":"${lb_dns_name}"}`);
+  const accountId = JSON.parse(`{ "account_id":"${account_id}"}`); 
   const parsedEnvVars = JSON.parse(process.env.TEST_ENV_VAR_OVERRIDES);
-  const parsedVars = Object.assign(hostname, parsedEnvVars);
+  const sessionToken = JSON.parse(process.env.AWS_SESSION_TOKEN);
+  const secretKey = JSON.parse(process.env.AWS_SECRET_ACCESS_KEY);
+  const accessKey = JSON.parse(process.env.AWS_ACCESS_KEY_ID);
+  const parsedVars = Object.assign(hostname,accountId,sessionToken,secretKey,parsedVars, parsedEnvVars);
   if (Object.keys(parsedVars).length === 0) return envVarsArray;
   for (const [key, value] of Object.entries(parsedVars)) {
     console.log(`[Env Override] Setting ${key} as ${value}`);
