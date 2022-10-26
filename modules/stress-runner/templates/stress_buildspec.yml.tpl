@@ -117,7 +117,14 @@ phases:
         else 
           export STRESS_RESULT=false
         fi
-      - aws lambda invoke --function-name $TRIGGER --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
+      - |
+        if [ $DEPLOYMENT_TYPE == "AppMesh" ]; then
+          echo $DEPLOYMENT_TYPE
+          echo $TASK_TOKEN
+          aws lambda invoke --function-name $TRIGGER --invocation-type Event --payload "{ \"DeploymentType\":\"$DEPLOYMENT_TYPE\", \"TaskToken\":\"$TASK_TOKEN\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
+        else
+          aws lambda invoke --function-name $TRIGGER --invocation-type Event --payload "{ \"LifecycleEventHookExecutionId\":\"$HOOK_ID\", \"DeploymentId\":\"$DEPLOYMENT_ID\",\"UpdateReport\":true, \"StressResults\":$STRESS_RESULT }" /dev/null
+        fi
 reports:
   $REPORT_GROUP:
     files:

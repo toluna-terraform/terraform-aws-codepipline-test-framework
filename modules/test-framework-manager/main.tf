@@ -59,6 +59,13 @@ resource "aws_lambda_layer_version" "lambda_layer" {
   source_code_hash    = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
+# ---- prepare lambda zip file
+data "archive_file" "test_framework_zip" {
+    type        = "zip"
+    source_file  = "${path.module}/lambda/test_framework_manager.js"
+    output_path = "${path.module}/lambda/lambda.zip"
+}
+
 resource "aws_lambda_function" "test_framework" {
   filename         = "${path.module}/lambda/lambda.zip"
   function_name    = "${var.app_name}-${var.env_type}-test-framework-manager"
@@ -73,6 +80,7 @@ resource "aws_lambda_function" "test_framework" {
   }
   depends_on = [
     aws_lambda_layer_version.lambda_layer,
+    data.archive_file.test_framework_zip,
   ]
 }
 

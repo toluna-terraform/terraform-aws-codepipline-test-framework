@@ -21,11 +21,11 @@ let taskToken;
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
-  //if (event.hasOwnProperty("DeploymentId")) {
   if (event.DeploymentType == "AppMesh") {
       deploymentType = "AppMesh";
       taskToken = event.TaskToken;
   }
+  //if (event.hasOwnProperty("DeploymentId")) {
   else if (event.DeploymentId) {
     deploymentId = event.DeploymentId;
     deploymentType = "ECS";
@@ -161,7 +161,8 @@ async function runIntegrationTest(app_config) {
 // calls stress-runner 
 function runStressTest(app_config) {
   let port = 4443;
-  if (deploymentType == "AppMesh") port = 443;
+  if (deploymentType == "AppMesh") 
+    port = 443;
   console.log("calling stress-runner ...");
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`,
