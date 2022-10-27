@@ -13,6 +13,15 @@ data "aws_iam_policy_document" "codebuild_role_policy" {
   }
 }
 
+data "aws_iam_policy_document" "inline_test_framework_policy_doc" {
+  statement {
+    actions   = [
+      "states:*"
+        ]
+    resources = ["*"]
+  }
+}
+
 data "aws_ssm_parameter" "codepipeline_connection_arn" {
   name = "/infra/codepipeline/connection_arn"
 }
