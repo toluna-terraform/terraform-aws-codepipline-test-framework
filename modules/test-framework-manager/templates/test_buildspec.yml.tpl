@@ -20,7 +20,7 @@ phases:
     commands:
       - echo "publishing $ENV_NAME integration test reports"
       - URL="https://api.bitbucket.org/2.0/repositories/tolunaengineering/$APP_NAME/commit/$COMMIT_ID/statuses/build/"
-      - curl --request POST --url $URL --header "Accept:application/json" --header "Content-Type:application/json" -u "$BB_USER:$BB_PASS" --data "{\"key\":\"$APP_NAME Integration tests\",\"state\":\"$TEST_STATUS\",\"description\":\"$DESCRIPTION\",\"url\":\"$REPORT_URL\"}"
+      - curl --request POST --url $URL --header "Accept:application/json" --header "Content-Type:application/json" -u "$BB_USER:$BB_PASS" --data "{\"key\":\"$APP_NAME tests completed \",\"state\":\"$TEST_STATUS\",\"description\":\"$DESCRIPTION\",\"url\":\"$REPORT_URL\"}"
       
 reports:
   $REPORT_GROUP:

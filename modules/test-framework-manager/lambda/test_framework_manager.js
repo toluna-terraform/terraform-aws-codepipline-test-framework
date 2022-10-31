@@ -249,9 +249,10 @@ async function updateRunner(deploymentId, combinedRunner,lifecycleEventHookExecu
   else if (deploymentType == "AppMesh") {
     taskToken = event.TaskToken;
     console.log("taskToken = " + taskToken);
+    console.log("event.StressResults = " + event.StressResults);
     let params = {
       taskToken: taskToken,
-      output : JSON.stringify( {"StatusCode" : "200"} )
+      output : JSON.stringify( {"TestsSuccessful" : event.StressResults } )
     };
     await sf.sendTaskSuccess(params).promise();
     console.log("calledbck SF with taskToken = " + taskToken);
