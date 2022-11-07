@@ -86,7 +86,7 @@ resource "aws_lambda_function" "test_framework" {
 
 # IAM role
 resource "aws_iam_role" "test_framework" {
-  name = "lambda-role-${var.app_name}_${var.env_type}_test_framework"
+  name = "lambda-role-${var.app_name}-${var.env_type}-test-framework"
 
   assume_role_policy = <<POLICY
 {
