@@ -32,6 +32,13 @@ resource "aws_lambda_layer_version" "lambda_layer_integration" {
   source_code_hash = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
+# ---- prepare lambda zip file
+data "archive_file" "integration_runner_zip" {
+    type        = "zip"
+    source_file  = "${path.module}/lambda/integration_runner.js"
+    output_path = "${path.module}/lambda/lambda.zip"
+}
+
 resource "aws_lambda_function" "integration_runner" {
   filename      = "${path.module}/lambda/lambda.zip"
   function_name = "${var.app_name}-${var.env_type}-integration-runner"
@@ -46,6 +53,7 @@ resource "aws_lambda_function" "integration_runner" {
   }
   depends_on = [
     aws_lambda_layer_version.lambda_layer_integration,
+    data.archive_file.integration_runner_zip,
     ]
 }
 
