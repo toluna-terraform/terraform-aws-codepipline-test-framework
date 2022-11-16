@@ -100,8 +100,9 @@ resource "aws_iam_role" "test_framework" {
           "codedeploy.amazonaws.com",
           "codebuild.amazonaws.com",
           "codepipeline.amazonaws.com",
+          "lambda.amazonaws.com",
+          "apigateway.amazonaws.com",
           "states.amazonaws.com",
-          "lambda.amazonaws.com"
         ]
       },
       "Effect": "Allow",
@@ -120,37 +121,7 @@ resource "aws_iam_role_policy" "inline_test_framework_policy" {
 
 resource "aws_iam_role_policy_attachment" "role-lambda-execution" {
   role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
-}
-
-resource "aws_iam_role_policy_attachment" "role-lambda-ssm" {
-  role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-cloudwatch" {
-  role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-codedeploy" {
-  role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-codebuild" {
-  role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-s3" {
-  role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "role-ec2" {
-  role       = aws_iam_role.test_framework.name
-  policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
 # resource "aws_iam_policy_attachment" "attach-sf-access" {
