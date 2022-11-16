@@ -6,6 +6,7 @@ const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 const apigw = new AWS.APIGateway({ apiVersion: '2015-07-09' });
 const ssm = new AWS.SSM({ apiVersion: '2014-11-06', region: 'us-east-1' });
+const sf = new AWS.StepFunctions({ apiVersion: '2016-11-23', region: 'us-east-1' });
 
 let deploymentId;
 let lifecycleEventHookExecutionId;
@@ -13,13 +14,31 @@ let integration_report_group_arn;
 let stress_report_group_arn;
 let runIntegrationTests;
 let runStressTests;
-let deploymentType;
+let env_name;
+let env_color;
+let deploymentType; // values ECS (CodeDeploy), SAM, AppMesh
+let taskToken;
 let app_config = {};
+
 exports.handler = function (event, context, callback) {
   console.log('event', event);
-  if (event.hasOwnProperty("DeploymentId")) {
-    deploymentId = event.DeploymentId;
+  if (event.DeploymentType == "AppMesh") {
+    deploymentType = "AppMesh";
+    taskToken = event.TaskToken;
   }
+  else if (event.DeploymentId) {
+    deploymentId = event.DeploymentId;
+    deploymentType = "ECS";
+  }
+  else if (event["CodePipeline.job"]) {
+    deploymentId = event["CodePipeline.job"].id;
+    deploymentType = "SAM";
+    console.log('environment', event["CodePipeline.job"].data.actionConfiguration.configuration.UserParameters);
+    const context = event["CodePipeline.job"].data.actionConfiguration.configuration.UserParameters.split(",");
+    env_name = context[0];
+    env_color = context[1];
+  }
+
   lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
   const combinedRunner = event.Combined;
   let IntegResults = event.IntegResults;
@@ -31,11 +50,15 @@ exports.handler = function (event, context, callback) {
   if (!runStressTests) {
     StressResults = true;
   }
+
+  // if event.UpdateReport == true, it means, this lambda is called back from build job
+  // if event.StressResults == true, it means, stress tests build job is successful
   if (event.UpdateReport && event.StressResults) {
     updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, false);
   } else if (event.UpdateReport && !event.StressResults) {
     updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, true);
-  } else {
+  }
+  else {
     try {
       sleep(parseInt(process.env.ALB_WAIT_TIME, 300) * 1000).then(
         getDeploymentDetails()
@@ -50,6 +73,18 @@ exports.handler = function (event, context, callback) {
                       getConsulConfig(value.address, value.token, value.deploy_details.environment).then(
                         function (configDetails) {
                           app_config['CONFIG_DETAILS'] = configDetails;
+                          console.log("app_config = " + app_config);
+                          console.log("app_config run_integration_tests flag = " + app_config['CONFIG_DETAILS'].run_integration_tests);
+                          app_config['CONFIG_DETAILS'].run_integration_tests = true;
+                          app_config['CONFIG_DETAILS'].run_stress_tests = true;
+                          console.log("app_config run_integration_tests flag = " + app_config['CONFIG_DETAILS'].run_integration_tests);
+                          if (deploymentType == "AppMesh") {
+                            app_config['CONFIG_DETAILS'].deploymentId = "dummy_deployment_id";
+                            app_config['CONFIG_DETAILS'].environment = event.environment;
+                            app_config['REPORT_GROUPS'].integration_report_group_arn = event.integration_report_group;
+                            app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
+                            app_config['LB_NAME'] = event.lb_name;
+                          }
                           console.log(app_config);
                           if (app_config['CONFIG_DETAILS'].run_integration_tests) {
                             runIntegrationTest(app_config).then(
@@ -89,11 +124,18 @@ exports.handler = function (event, context, callback) {
   }
 };
 
+// calls integration-runner 
 async function runIntegrationTest(app_config) {
+  console.log("calling integration-runner ...");
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`,
     InvocationType: "RequestResponse",
-    Payload: JSON.stringify({ deploymentId: `${deploymentId}`, environment: `${app_config['CONFIG_DETAILS'].environment}`, report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`, lb_name: `${app_config['LB_NAME']}` })
+    Payload: JSON.stringify({
+      deploymentId: `${deploymentId}`,
+      environment: `${app_config['CONFIG_DETAILS'].environment}`,
+      report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`,
+      lb_name: `${app_config['LB_NAME']}`
+    })
   };
   return await new Promise((resolve, reject) => {
     setTimeout(function () {
@@ -111,11 +153,27 @@ async function runIntegrationTest(app_config) {
   });
 }
 
+// calls stress-runner 
 function runStressTest(app_config) {
+  let port = 4443;
+  if (deploymentType == "AppMesh")
+    port = 443;
+  console.log("calling stress-runner ...");
   var params = {
     FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`,
     InvocationType: "Event",
-    Payload: JSON.stringify({ runIntegrationTests: runIntegrationTests, hookId: `${lifecycleEventHookExecutionId}`, deploymentId: `${deploymentId}`, environment: `${app_config['CONFIG_DETAILS'].environment}`, report_group: `${stress_report_group_arn}`, lb_name: `${app_config['LB_NAME']}`, port: "4443", trigger: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-test-framework-manager` })
+    Payload: JSON.stringify({
+      runIntegrationTests: runIntegrationTests,
+      hookId: `${lifecycleEventHookExecutionId}`,
+      deploymentId: `${deploymentId}`,
+      environment: `${app_config['CONFIG_DETAILS'].environment}`,
+      report_group: `${app_config['REPORT_GROUPS'].stress_report_group_arn}`,
+      lb_name: `${app_config['LB_NAME']}`,
+      port: port,
+      trigger: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-test-framework-manager`,
+      DeploymentType: deploymentType,
+      TaskToken: taskToken
+    })
   };
 
   lambda.invoke(params, function (err, data) {
@@ -125,7 +183,11 @@ function runStressTest(app_config) {
 
 }
 
+// updates EventHookStatus in case deploymentType == ECS
+// updates job status in pipeline if deploymentType = SAM
+// updates SF step if deploymentType = AppMesh
 async function updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, error) {
+  // q - deploymentId doesn't exist for AppMesh deployment
   if (deploymentId) {
     console.log('starting to update lifecycle event hook status...');
     console.log(`Deployment Type:::${deploymentType}`);
@@ -162,13 +224,13 @@ async function updateRunner(deploymentId, combinedRunner, lifecycleEventHookExec
             });
           }
           else {
-          // call merge waiter function
+            // call merge waiter function
             var params = {
               FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-merge-waiter`,
               InvocationType: "RequestResponse",
-              Payload: JSON.stringify({ DeploymentId: `${deploymentId}`, LifecycleEventHookExecutionId: `${lifecycleEventHookExecutionId}`})
+              Payload: JSON.stringify({ DeploymentId: `${deploymentId}`, LifecycleEventHookExecutionId: `${lifecycleEventHookExecutionId}` })
             };
-  
+
             lambda.invoke(params, function (err, data) {
               if (err) {
                 reject(err, err.stack);
@@ -178,11 +240,23 @@ async function updateRunner(deploymentId, combinedRunner, lifecycleEventHookExec
                 resolve(data.Payload);
               }
             });
-          }  
+          }
         }
       }, 1000);
     });
-  } else if (combinedRunner) {
+  } else if (deploymentType == "AppMesh") {
+    taskToken = event.TaskToken;
+    console.log("taskToken = " + taskToken);
+    console.log("event.StressResults = " + event.StressResults);
+    let params = {
+      taskToken: taskToken,
+      output: JSON.stringify({ "TestsSuccessful": event.StressResults })
+    };
+    await sf.sendTaskSuccess(params).promise();
+    console.log("calledbck SF with taskToken = " + taskToken);
+
+  }
+  else if (combinedRunner) {
     return {
       passed: !error
     };
@@ -229,6 +303,9 @@ async function getDeploymentDetails() {
           }// successful response
         });
       }, 1000);
+    } else if (deploymentType == "AppMesh") {
+      console.log("getDeploymentDetails not applicable for AppMesh deploymentType");
+      resolve({ "lb_env_name": "not-applicable", "environment": environment, "deploy_type": deploymentType });
     } else {
       reject(`deploy_status = "No deployment ID Found"`);
     }
@@ -237,6 +314,7 @@ async function getDeploymentDetails() {
 }
 
 async function getLBDetails(deploy_details) {
+  console.log("getLBDetails in progress...")
   const lb_name = `${process.env.APP_NAME}-${deploy_details.lb_env_name}`;
   var elb_params = {
     Names: [
@@ -247,40 +325,45 @@ async function getLBDetails(deploy_details) {
     console.log(`Deployment Type::::${deploymentType}`)
     let lb_dns_name;
     if (deploymentType == "ECS") {
-      elbv2.describeLoadBalancers(elb_params, function (err, data) {
-        if (err) {
-          console.log(err, err.stack); // an error occurred
-          reject(err, err.stack);
-        }
-        else {
-          // console.log(data);
-          if (deploy_details.deploy_type == "ECS") {
-            lb_dns_name = `${data.LoadBalancers[0].DNSName}:4443`;
-          }
-          console.log(`Setting test host to ${deploy_details.lb_dns_name}`)
-          resolve(lb_dns_name);
-        }// successful response
-      })
-    } else if (deploymentType == "SAM"){
-        var params = {
-        };
-        apigw.getRestApis(params, function(err, data) {
+      setTimeout(function () {
+        elbv2.describeLoadBalancers(elb_params, function (err, data) {
           if (err) {
             console.log(err, err.stack); // an error occurred
             reject(err, err.stack);
           }
           else {
-            data.items.forEach((item) => {
-              console.log(`ITEM:::: ${item['name']}:::${item['id']}`)
-              if (item['name'] == `${process.env.APP_NAME}-${deploy_details.environment}` ) {
-                lb_dns_name = `${item['id']}.execute-api.us-east-1.amazonaws.com`
-              }
-            });
-            console.log(`Setting test host to ${lb_dns_name}`)
+            // console.log(data);
+            if (deploy_details.deploy_type == "ECS") {
+              lb_dns_name = `${data.LoadBalancers[0].DNSName}:4443`;
+            }
+            console.log(`Setting test host to ${deploy_details.lb_dns_name}`)
             resolve(lb_dns_name);
-          }
-        });// successful response         // successful response
-    } else {
+          }// successful response
+        })
+      })
+    } else if (deploymentType == "SAM") {
+      var params = {
+      };
+      apigw.getRestApis(params, function (err, data) {
+        if (err) {
+          console.log(err, err.stack); // an error occurred
+          reject(err, err.stack);
+        }
+        else {
+          data.items.forEach((item) => {
+            console.log(`ITEM:::: ${item['name']}:::${item['id']}`)
+            if (item['name'] == `${process.env.APP_NAME}-${deploy_details.environment}`) {
+              lb_dns_name = `${item['id']}.execute-api.us-east-1.amazonaws.com`
+            }
+          });
+          console.log(`Setting test host to ${lb_dns_name}`)
+          resolve(lb_dns_name);
+        }
+      });// successful response         // successful response
+    } else if (deploymentType == "AppMesh") {
+      console.log("Deployment details are not applicable to AppMesh deploymentType. ")
+    }
+    else {
       lb_dns_name = `${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`;
       console.log(`Setting test host to ${deploy_details.lb_env_name}.${process.env.DOMAIN}:443`)
       resolve(lb_dns_name);
@@ -289,6 +372,7 @@ async function getLBDetails(deploy_details) {
 }
 
 async function getReportGroupDetails(deploy_details) {
+  console.log("getReportGroupDetails in progress...")
   var listReportParams = {
 
   };

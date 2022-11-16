@@ -59,6 +59,13 @@ resource "aws_lambda_layer_version" "lambda_layer" {
   source_code_hash    = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
+# ---- prepare lambda zip file
+data "archive_file" "test_framework_zip" {
+    type        = "zip"
+    source_file  = "${path.module}/lambda/test_framework_manager.js"
+    output_path = "${path.module}/lambda/lambda.zip"
+}
+
 resource "aws_lambda_function" "test_framework" {
   filename         = "${path.module}/lambda/lambda.zip"
   function_name    = "${var.app_name}-${var.env_type}-test-framework-manager"
@@ -73,12 +80,13 @@ resource "aws_lambda_function" "test_framework" {
   }
   depends_on = [
     aws_lambda_layer_version.lambda_layer,
+    data.archive_file.test_framework_zip,
   ]
 }
 
-# IAM
+# IAM role
 resource "aws_iam_role" "test_framework" {
-  name = "${var.app_name}_${var.env_type}_test_framework"
+  name = "lambda-role-${var.app_name}-${var.env_type}-test-framework"
 
   assume_role_policy = <<POLICY
 {
@@ -93,7 +101,8 @@ resource "aws_iam_role" "test_framework" {
           "codebuild.amazonaws.com",
           "codepipeline.amazonaws.com",
           "lambda.amazonaws.com",
-          "apigateway.amazonaws.com"
+          "apigateway.amazonaws.com",
+          "states.amazonaws.com",
         ]
       },
       "Effect": "Allow",
@@ -104,10 +113,22 @@ resource "aws_iam_role" "test_framework" {
 POLICY
 }
 
-resource "aws_iam_role_policy_attachment" "role-test-execution" {
+resource "aws_iam_role_policy" "inline_test_framework_policy" {
+  name   = "inline-policy-test-framework"
+  role   = aws_iam_role.test_framework.id
+  policy = data.aws_iam_policy_document.inline_test_framework_policy_doc.json
+}
+
+resource "aws_iam_role_policy_attachment" "role-lambda-execution" {
   role       = aws_iam_role.test_framework.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
+
+# resource "aws_iam_policy_attachment" "attach-sf-access" {
+#   name = "attach-sf-access-${var.app_name}-${var.env_type}"
+#   roles       = [ aws_iam_role.test_framework.name ]
+#   policy_arn = "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
+# }
 
 resource "aws_codebuild_project" "tests_reports" {
   name          = "${local.codebuild_name}"

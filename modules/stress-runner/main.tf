@@ -54,6 +54,13 @@ resource "aws_lambda_layer_version" "lambda_layer_stress" {
   source_code_hash    = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
+# ---- prepare lambda zip file
+data "archive_file" "stress_runner_zip" {
+    type        = "zip"
+    source_file  = "${path.module}/lambda/stress_runner.js"
+    output_path = "${path.module}/lambda/lambda.zip"
+}
+
 resource "aws_lambda_function" "stress_runner" {
   filename         = "${path.module}/lambda/lambda.zip"
   function_name    = "${var.app_name}-${var.env_type}-stress-runner"
@@ -68,5 +75,6 @@ resource "aws_lambda_function" "stress_runner" {
   }
   depends_on = [
     aws_lambda_layer_version.lambda_layer_stress,
+    data.archive_file.stress_runner_zip,
   ]
 }

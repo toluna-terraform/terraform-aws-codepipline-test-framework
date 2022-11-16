@@ -1,9 +1,15 @@
 <!-- BEGIN_TF_DOCS -->
-Integration tests framework [Terraform module](https://registry.terraform.io/modules/toluna-terraform/codepipline-test-framework/aws/latest)
+Integration & Stress tests framework [Terraform module](https://registry.terraform.io/modules/toluna-terraform/codepipline-test-framework/aws/latest)
 
 ### Description
-This module supports running integration tests intended as a post installation hook of deploy stage using codepipeline,before shifting traffic from test to production, it is lambda based and uses postman collections combined with postman Cli(newman).
+This module supports running integration & stress tests intended as a post installation hook of deploy stage using codepipeline,before shifting traffic from test to production, it is lambda based and uses postman collections for Integratin Tests and .jmx for Stress tests.
+
 The output is then uploaded to S3 as junit and html reports and publish under codebuild with a unique report group.
+
+Depending on the flags set in consul application configuration, integraton_tests and stress_tests may be performed or skipped. 
+
+This framework works for differnt DeploymentTypes (ECS / SAM / AppMesh).
+
 
 \* **an environment equals in it's name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.**
 
@@ -87,5 +93,6 @@ No requirements.
 |------|-------------|
 | <a name="output_CodeCoverageReport"></a> [CodeCoverageReport](#output\_CodeCoverageReport) | n/a |
 | <a name="output_IntegrationTestReport"></a> [IntegrationTestReport](#output\_IntegrationTestReport) | n/a |
+| <a name="output_StressTestReport"></a> [StressTestReport](#output\_IntegrationTestReport) | n/a |
 | <a name="output_TestReport"></a> [TestReport](#output\_TestReport) | n/a |
 <!-- END_TF_DOCS -->
