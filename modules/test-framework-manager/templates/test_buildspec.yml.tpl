@@ -4,7 +4,7 @@ env:
   parameter-store:
     BB_USER: "/app/bb_user"  
     BB_PASS: "/app/bb_app_pass"
-    CONSUL_PROJECT_ID: "/infra/${app_name}-${env_type}/consul_project_id"
+    CONSUL_URL: "/infra/consul_url"
     CONSUL_HTTP_TOKEN: "/infra/${app_name}-${env_type}/consul_http_token"
 
 phases:
@@ -13,7 +13,7 @@ phases:
         - yum install -y yum-utils
         - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
         - yum -y install terraform consul
-        - export CONSUL_HTTP_ADDR=https://consul-cluster-test.consul.$CONSUL_PROJECT_ID.aws.hashicorp.cloud
+        - export CONSUL_HTTP_ADDR=https://$CONSUL_URL
         - REPORT_URL="https://console.aws.amazon.com/codesuite/codebuild/testReports/reportGroups/$APP_NAME-$ENV_NAME-IntegrationTestReport"
         - COMMIT_ID=$(consul kv get "infra/$APP_NAME-$ENV_NAME/commit_id")
   build:
