@@ -88,7 +88,7 @@ resource "aws_lambda_function" "test_framework" {
 resource "aws_iam_role" "test_framework" {
   name = "lambda-role-${var.app_name}-${var.env_type}-test-framework"
 
-  assume_role_policy = <<POLICY
+  assume_role_policy = jsonencode(
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -109,8 +109,7 @@ resource "aws_iam_role" "test_framework" {
       "Sid": ""
     }
   ]
-}
-POLICY
+})
 }
 
 resource "aws_iam_role_policy" "inline_test_framework_policy" {
