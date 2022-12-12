@@ -439,9 +439,9 @@ async function getConsulAddress(deploy_details) {
   });
 }
 
-async function getConsulConfig(CONSUL_TOKEN, ENVIRONMENT) {
+async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN, ENVIRONMENT) {
   const consul = new Consul({
-    host: `consul-tf.toluna-internal.com`,
+    host: `${CONSUL_ADDRESS}`,
     secure: true,
     port: 443,
     promisify: true,
