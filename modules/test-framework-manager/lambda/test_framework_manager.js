@@ -424,7 +424,7 @@ async function getConsulToken(value) {
 
 async function getConsulAddress(deploy_details) {
   var paramsAddr = {
-    Name: '/infra/consul_project_id', /* required */
+    Name: '/infra/consul_url', /* required */
     WithDecryption: true
   };
   return await new Promise((resolve, reject) => {
@@ -439,9 +439,9 @@ async function getConsulAddress(deploy_details) {
   });
 }
 
-async function getConsulConfig(CONSUL_ADDRESS, CONSUL_TOKEN, ENVIRONMENT) {
+async function getConsulConfig(CONSUL_TOKEN, ENVIRONMENT) {
   const consul = new Consul({
-    host: `consul-cluster-test.consul.${CONSUL_ADDRESS}.aws.hashicorp.cloud`,
+    host: `consul-tf.toluna-internal.com`,
     secure: true,
     port: 443,
     promisify: true,
