@@ -75,9 +75,9 @@ exports.handler = function (event, context, callback) {
                           app_config['CONFIG_DETAILS'] = configDetails;
                           console.log("app_config = " + app_config);
                           console.log("app_config run_integration_tests flag = " + app_config['CONFIG_DETAILS'].run_integration_tests);
-                          app_config['CONFIG_DETAILS'].run_integration_tests = true;
-                          app_config['CONFIG_DETAILS'].run_stress_tests = true;
-                          console.log("app_config run_integration_tests flag = " + app_config['CONFIG_DETAILS'].run_integration_tests);
+                          //app_config['CONFIG_DETAILS'].run_integration_tests = true;
+                          //app_config['CONFIG_DETAILS'].run_stress_tests = true;
+                          console.log("app_config run_stress_tests flag = " + app_config['CONFIG_DETAILS'].run_stress_tests);
                           if (deploymentType == "AppMesh") {
                             app_config['CONFIG_DETAILS'].deploymentId = "dummy_deployment_id";
                             app_config['CONFIG_DETAILS'].environment = event.environment;
