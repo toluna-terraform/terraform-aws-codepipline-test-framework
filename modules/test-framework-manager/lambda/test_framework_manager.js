@@ -297,7 +297,8 @@ async function getDeploymentDetails() {
             }
             if (platform === "Lambda") {
               deploymentType = "SAM"
-              environment = data.deploymentInfo.applicationName.split('-')[2];
+              environment = data.deploymentInfo.applicationName.replace(`serverlessrepo-${process.env.APP_NAME}-`,'');
+              environment = environment.split('-')[0];
               resolve({ "lb_env_name": `${environment}.${process.env.APP_NAME}`, "environment": environment, "deploy_type": deploymentType });
             }
           }// successful response
