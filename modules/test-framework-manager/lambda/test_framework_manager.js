@@ -85,13 +85,6 @@ exports.handler = function (event, context, callback) {
                             app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
                             app_config['LB_NAME'] = event.lb_name;
                           }
-                          if (deploymentType == "SAM") {
-                            app_config['CONFIG_DETAILS'].deploymentId = "dummy_deployment_id";
-                            app_config['CONFIG_DETAILS'].environment = event.environment;
-                            app_config['REPORT_GROUPS'].integration_report_group_arn = event.integration_report_group;
-                            app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
-                            app_config['ENV_COLOR'] = env_color;
-                          }
                           console.log(app_config);
                           if (app_config['CONFIG_DETAILS'].run_integration_tests) {
                             runIntegrationTest(app_config).then(
@@ -306,7 +299,14 @@ async function getDeploymentDetails() {
             if (platform === "Lambda") {
               deploymentType = "SAM"
               environment = data.deploymentInfo.applicationName.replace(`serverlessrepo-${process.env.APP_NAME}-`,'');
+              if (environment.includes("green")) {
+                app_config['ENV_COLOR'] = "green"
+              } 
+              if (environment.includes("blue")) {
+                app_config['ENV_COLOR'] = "blue"
+              }
               environment = environment.split('-')[0];
+              
               resolve({ "lb_env_name": `${environment}.${process.env.APP_NAME}`, "environment": environment, "deploy_type": deploymentType });
             }
           }// successful response
