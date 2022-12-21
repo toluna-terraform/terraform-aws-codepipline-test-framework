@@ -15,6 +15,7 @@ let test_status = "SUCCESSFUL";
 let deploymentId;
 let lb_dns_name;
 let environment;
+let workspace_color;
 let report_group;
 let account_id;
 let error;
@@ -24,6 +25,7 @@ exports.handler = function (event, context, callback) {
   deploymentId = event.deploymentId;
   lb_dns_name = event.lb_name;
   environment = event.environment;
+  workspace_color = event.env_color;
   report_group = event.report_group;
   account_id = context.invokedFunctionArn.split(':')[4];
   try {
@@ -262,7 +264,12 @@ function generateEnvVars() {
   const sessionToken = JSON.parse(`{ "AWS_SESSION_TOKEN":"${process.env.AWS_SESSION_TOKEN}"}`);
   const secretKey = JSON.parse(`{ "AWS_SECRET_ACCESS_KEY":"${process.env.AWS_SECRET_ACCESS_KEY}"}`);
   const accessKey = JSON.parse(`{ "AWS_ACCESS_KEY_ID":"${process.env.AWS_ACCESS_KEY_ID}"}`);
-  const parsedVars = Object.assign(hostname,accountId,sessionToken,secretKey,accessKey, parsedEnvVars);
+  let workspace = environment;
+  if (workspace_color != 'undefined') {
+    workspace = `${workspace}-${workspace_color}`
+  }
+  const environment_color = JSON.parse(`{ "environment":"${workspace}"}`);
+  const parsedVars = Object.assign(hostname,accountId,sessionToken,secretKey,accessKey, parsedEnvVars, environment_color);
   if (Object.keys(parsedVars).length === 0) return envVarsArray;
   for (const [key, value] of Object.entries(parsedVars)) {
     if (!key.startsWith("AWS")) {

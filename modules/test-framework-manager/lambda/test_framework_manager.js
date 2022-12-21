@@ -85,6 +85,13 @@ exports.handler = function (event, context, callback) {
                             app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
                             app_config['LB_NAME'] = event.lb_name;
                           }
+                          if (deploymentType == "SAM") {
+                            app_config['CONFIG_DETAILS'].deploymentId = "dummy_deployment_id";
+                            app_config['CONFIG_DETAILS'].environment = event.environment;
+                            app_config['REPORT_GROUPS'].integration_report_group_arn = event.integration_report_group;
+                            app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
+                            app_config['ENV_COLOR'] = env_color;
+                          }
                           console.log(app_config);
                           if (app_config['CONFIG_DETAILS'].run_integration_tests) {
                             runIntegrationTest(app_config).then(
@@ -133,6 +140,7 @@ async function runIntegrationTest(app_config) {
     Payload: JSON.stringify({
       deploymentId: `${deploymentId}`,
       environment: `${app_config['CONFIG_DETAILS'].environment}`,
+      env_color: `${app_config['ENV_COLOR']}`,
       report_group: `${app_config['REPORT_GROUPS'].integration_report_group_arn}`,
       lb_name: `${app_config['LB_NAME']}`
     })
