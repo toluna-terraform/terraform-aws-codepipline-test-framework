@@ -286,7 +286,9 @@ async function getDeploymentDetails() {
             if (platform === "ECS") {
               deploymentType = "ECS"
               lb_env_name = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+              lb_env_name = lb_env_name.replace(`${process.env.APP_NAME}-`, "");
               environment = data.deploymentInfo.applicationName.replace("ecs-deploy-", "");
+              environment = environment.replace(`${process.env.APP_NAME}-`, "");
               environment = environment.replace("-green", "");
               environment = environment.replace("-blue", "");
 
