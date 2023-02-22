@@ -186,7 +186,7 @@ module "integration_runner" {
   integration_tests_bucket = aws_s3_bucket.tests_bucket.bucket
   postman_collections      = var.postman_collections
   environment_variables    = local.lambda_env_variables
-  tribe_vpc                = var.tribe_vpc
+  tribe_vpcs                = var.tribe_vpcs
 }
 
 module "stress_runner" {
@@ -198,5 +198,5 @@ module "stress_runner" {
   stress_tests_bucket   = aws_s3_bucket.tests_bucket.bucket
   jmx_file_path         = var.jmx_file_path
   environment_variables = local.lambda_env_variables
-  tribe_vpc             = var.tribe_vpc
+  tribe_vpcs             = var.tribe_vpcs
 }

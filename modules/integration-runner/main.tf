@@ -40,7 +40,7 @@ data "archive_file" "integration_runner_zip" {
 }
 
 resource "aws_lambda_function" "integration_runner" {
-  for_each         = var.tribe_vpc != {} ? var.tribe_vpc : toset({ "default" : {} })
+  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : toset({ "default" : {} })
   filename         = "${path.module}/lambda/lambda.zip"
   function_name    = each.key == "default" ? "${var.app_name}-${var.env_type}-integration-runner" : "${var.app_name}-${var.env_type}-${each.key}-integration-runner"
   role             = var.role
@@ -63,7 +63,7 @@ resource "aws_lambda_function" "integration_runner" {
 }
 
 resource "aws_security_group" "integration_runner" {
-  for_each         = var.tribe_vpc != {} ? var.tribe_vpc : toset({})
+  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : toset({})
   vpc_id   = each.value.vpc_id
   name     = "${var.app_name}-${var.env_type}-${each.key}-integration-runner"
 

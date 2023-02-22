@@ -9,7 +9,7 @@ module "test_framework_manager" {
   environment_variables_parameter_store = var.environment_variables_parameter_store
   postman_collections                   = var.postman_collections
   jmx_file_path                         = var.jmx_file_path
-  tribe_vpc                             = var.tribe_vpc
+  tribe_vpcs                             = var.tribe_vpcs
 }
 
 resource "aws_codebuild_report_group" "TestReport" {
