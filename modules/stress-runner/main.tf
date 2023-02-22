@@ -1,11 +1,11 @@
-locals{
-    codebuild_name        = "codebuild-stress-runner-${var.app_name}-${var.env_type}" 
-    lambda_env_variables = merge({
-    APP_NAME               = var.app_name
-    ENV_TYPE               = var.env_type
-    JMX_FILE_PATH          = var.jmx_file_path
-    JMETER_VERSION         = var.jmeter_version
-  },var.environment_variables)
+locals {
+  codebuild_name = "codebuild-stress-runner-${var.app_name}-${var.env_type}"
+  lambda_env_variables = merge({
+    APP_NAME       = var.app_name
+    ENV_TYPE       = var.env_type
+    JMX_FILE_PATH  = var.jmx_file_path
+    JMETER_VERSION = var.jmeter_version
+  }, var.environment_variables)
 }
 
 resource "aws_codebuild_project" "stress_runner" {
@@ -23,7 +23,7 @@ resource "aws_codebuild_project" "stress_runner" {
     image                       = "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
-    privileged_mode = var.privileged_mode
+    privileged_mode             = var.privileged_mode
   }
 
   logs_config {
@@ -34,16 +34,16 @@ resource "aws_codebuild_project" "stress_runner" {
   }
 
   source {
-    type     = "NO_SOURCE"
-    buildspec = templatefile("${path.module}/templates/stress_buildspec.yml.tpl", 
-  {  app_name = var.app_name, env_type = var.env_type,stress_tests_bucket = var.stress_tests_bucket,jmx_file_path = var.jmx_file_path, jmeter_version = var.jmeter_version,threshold = var.threshold })
+    type = "NO_SOURCE"
+    buildspec = templatefile("${path.module}/templates/stress_buildspec.yml.tpl",
+    { app_name = var.app_name, env_type = var.env_type, stress_tests_bucket = var.stress_tests_bucket, jmx_file_path = var.jmx_file_path, jmeter_version = var.jmeter_version, threshold = var.threshold })
   }
 
-    tags = tomap({
-                Name="codebuild-${local.codebuild_name}",
-                environment="${var.app_name}-${var.env_type}",
-                created_by="terraform"
-    })
+  tags = tomap({
+    Name        = "codebuild-${local.codebuild_name}",
+    environment = "${var.app_name}-${var.env_type}",
+    created_by  = "terraform"
+  })
 }
 
 
@@ -56,14 +56,15 @@ resource "aws_lambda_layer_version" "lambda_layer_stress" {
 
 # ---- prepare lambda zip file
 data "archive_file" "stress_runner_zip" {
-    type        = "zip"
-    source_file  = "${path.module}/lambda/stress_runner.js"
-    output_path = "${path.module}/lambda/lambda.zip"
+  type        = "zip"
+  source_file = "${path.module}/lambda/stress_runner.js"
+  output_path = "${path.module}/lambda/lambda.zip"
 }
 
 resource "aws_lambda_function" "stress_runner" {
+  for_each         = var.tribe_vpc != {} ? var.tribe_vpc : toset({ "default" : {} })
   filename         = "${path.module}/lambda/lambda.zip"
-  function_name    = "${var.app_name}-${var.env_type}-stress-runner"
+  function_name    = each.key == "default" ? "${var.app_name}-${var.env_type}-stress-runner" : "${var.app_name}-${var.env_type}-${each.key}-stress-runner"
   role             = var.role
   handler          = "stress_runner.handler"
   runtime          = "nodejs16.x"
@@ -73,8 +74,25 @@ resource "aws_lambda_function" "stress_runner" {
   environment {
     variables = local.lambda_env_variables
   }
+  vpc_config {
+    subnet_ids         = each.key == "default" ? [] : each.value.private_subnets
+    security_group_ids = each.key == "default" ? [] : [aws_security_group.stress_runner[each.key].id]
+  }
   depends_on = [
     aws_lambda_layer_version.lambda_layer_stress,
     data.archive_file.stress_runner_zip,
   ]
+}
+
+resource "aws_security_group" "stress_runner" {
+  for_each         = var.tribe_vpc != {} ? var.tribe_vpc : toset({})
+  vpc_id   = each.value.vpc_id
+  name     = "${var.app_name}-${var.env_type}-${each.key}-stress-runner"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }

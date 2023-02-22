@@ -65,3 +65,8 @@ variable "test_env_var_overrides" {
 variable "domain" {
   type = string
 }
+
+variable "tribe_vpc" {
+  description = "ID for the lambda's VPC"
+  default     = {}
+}

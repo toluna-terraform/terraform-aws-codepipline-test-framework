@@ -48,3 +48,8 @@ variable "stress_tests_bucket" {
   description = "S3 Bucket name for the S3 Bucket this module will upload the jmx test file"
   default     = null
 }
+
+variable "tribe_vpc" {
+  description = "ID for the lambda's VPC"
+  default     = {}
+}
