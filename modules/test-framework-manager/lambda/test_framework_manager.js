@@ -127,8 +127,13 @@ exports.handler = function (event, context, callback) {
 // calls integration-runner 
 async function runIntegrationTest(app_config) {
   console.log("calling integration-runner ...");
+  if (app_config['CONFIG_DETAILS'].shared_vpc_env == ''){
+    var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`
+  } else {
+    var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-${app_config['CONFIG_DETAILS'].shared_vpc_env}-integration-runner`
+  }
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`,
+    FunctionName: function_name,
     InvocationType: "RequestResponse",
     Payload: JSON.stringify({
       deploymentId: `${deploymentId}`,
@@ -160,8 +165,13 @@ function runStressTest(app_config) {
   if (deploymentType == "AppMesh")
     port = 443;
   console.log("calling stress-runner ...");
+  if (app_config['CONFIG_DETAILS'].shared_vpc_env == ''){
+    var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`
+  } else {
+    var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-${app_config['CONFIG_DETAILS'].shared_vpc_env}-integration-runner`
+  }
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`,
+    FunctionName: function_name,
     InvocationType: "Event",
     Payload: JSON.stringify({
       runIntegrationTests: runIntegrationTests,
@@ -480,6 +490,11 @@ async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN, ENVIRONMENT) {
           configMap['pipeline_type'] = selectedEnv.pipeline_type;
         } catch {
           configMap['pipeline_type'] = 'dev';
+        }
+        try {
+          configMap['shared_vpc_env'] = selectedEnv.shared_vpc_env;
+        } catch {
+          configMap['shared_vpc_env'] = '';
         }
         configMap['environment'] = ENVIRONMENT;
         resolve(configMap);

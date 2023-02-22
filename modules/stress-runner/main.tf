@@ -62,7 +62,7 @@ data "archive_file" "stress_runner_zip" {
 }
 
 resource "aws_lambda_function" "stress_runner" {
-  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : toset({ "default" : {} })
+  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : toset({})
   filename         = "${path.module}/lambda/lambda.zip"
   function_name    = each.key == "default" ? "${var.app_name}-${var.env_type}-stress-runner" : "${var.app_name}-${var.env_type}-${each.key}-stress-runner"
   role             = var.role
@@ -75,8 +75,26 @@ resource "aws_lambda_function" "stress_runner" {
     variables = local.lambda_env_variables
   }
   vpc_config {
-    subnet_ids         = each.key == "default" ? [] : each.value.private_subnets
-    security_group_ids = each.key == "default" ? [] : [aws_security_group.stress_runner[each.key].id]
+    subnet_ids         =  each.value.private_subnets
+    security_group_ids = [aws_security_group.stress_runner[each.key].id]
+  }
+  depends_on = [
+    aws_lambda_layer_version.lambda_layer_stress,
+    data.archive_file.stress_runner_zip,
+  ]
+}
+
+resource "aws_lambda_function" "stress_runner_default" {
+  filename         = "${path.module}/lambda/lambda.zip"
+  function_name    = "${var.app_name}-${var.env_type}-stress-runner"
+  role             = var.role
+  handler          = "stress_runner.handler"
+  runtime          = "nodejs16.x"
+  layers           = [aws_lambda_layer_version.lambda_layer_stress.arn]
+  timeout          = 180
+  source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
+  environment {
+    variables = local.lambda_env_variables
   }
   depends_on = [
     aws_lambda_layer_version.lambda_layer_stress,
