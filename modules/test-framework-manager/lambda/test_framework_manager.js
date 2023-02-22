@@ -311,6 +311,7 @@ async function getDeploymentDetails() {
             if (platform === "Lambda") {
               deploymentType = "SAM"
               environment = data.deploymentInfo.applicationName.replace(`serverlessrepo-${process.env.APP_NAME}-`,'');
+              environment = environment.replace(`lambda-deploy-${process.env.APP_NAME}-`,'');
               if (environment.includes("green")) {
                 app_config['ENV_COLOR'] = "green"
               } 
