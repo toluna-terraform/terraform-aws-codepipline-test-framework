@@ -62,7 +62,7 @@ data "archive_file" "stress_runner_zip" {
 }
 
 resource "aws_lambda_function" "stress_runner" {
-  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : toset({})
+  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : {}
   filename         = "${path.module}/lambda/lambda.zip"
   function_name    = each.key == "default" ? "${var.app_name}-${var.env_type}-stress-runner" : "${var.app_name}-${var.env_type}-${each.key}-stress-runner"
   role             = var.role
@@ -103,7 +103,7 @@ resource "aws_lambda_function" "stress_runner_default" {
 }
 
 resource "aws_security_group" "stress_runner" {
-  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : toset({})
+  for_each         = var.tribe_vpcs != {} ? var.tribe_vpcs : {}
   vpc_id   = each.value.vpc_id
   name     = "${var.app_name}-${var.env_type}-${each.key}-stress-runner"
 
