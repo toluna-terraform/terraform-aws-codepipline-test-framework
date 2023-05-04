@@ -22,6 +22,13 @@ resource "aws_s3_bucket_acl" "tests_bucket" {
   ]
 }
 
+resource "aws_s3_bucket_ownership_controls" "tests_bucket_acl_ownership" {
+  bucket = aws_s3_bucket.tests_bucket.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
+}
+
 resource "aws_s3_bucket_versioning" "postests_buckettman_bucket" {
   bucket = aws_s3_bucket.tests_bucket.id
   versioning_configuration {
