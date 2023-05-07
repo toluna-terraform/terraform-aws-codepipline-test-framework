@@ -35,27 +35,27 @@ resource "aws_s3_bucket_versioning" "postests_buckettman_bucket" {
     status = "Enabled"
   }
   depends_on = [
-      aws_s3_bucket.tests_bucket
-    ]
+    aws_s3_bucket.tests_bucket
+  ]
 }
 
 resource "aws_s3_bucket_public_access_block" "tests_bucket" {
-  bucket = aws_s3_bucket.tests_bucket.id
-  block_public_acls   = true
-  block_public_policy = true
-  ignore_public_acls  = true
+  bucket                  = aws_s3_bucket.tests_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
   restrict_public_buckets = true
-    depends_on = [
-      aws_s3_bucket.tests_bucket
-    ]
+  depends_on = [
+    aws_s3_bucket.tests_bucket
+  ]
 }
 
 resource "aws_s3_bucket_policy" "postman_bucket" {
   bucket = aws_s3_bucket.tests_bucket.id
   policy = data.aws_iam_policy_document.tests_bucket.json
-    depends_on = [
-      aws_s3_bucket.tests_bucket
-    ]
+  depends_on = [
+    aws_s3_bucket.tests_bucket
+  ]
 }
 
 
@@ -68,9 +68,9 @@ resource "aws_lambda_layer_version" "lambda_layer" {
 
 # ---- prepare lambda zip file
 data "archive_file" "test_framework_zip" {
-    type        = "zip"
-    source_file  = "${path.module}/lambda/test_framework_manager.js"
-    output_path = "${path.module}/lambda/lambda.zip"
+  type        = "zip"
+  source_file = "${path.module}/lambda/test_framework_manager.js"
+  output_path = "${path.module}/lambda/lambda.zip"
 }
 
 resource "aws_lambda_function" "test_framework" {
@@ -96,27 +96,27 @@ resource "aws_iam_role" "test_framework" {
   name = "lambda-role-${var.app_name}-${var.env_type}-test-framework"
 
   assume_role_policy = jsonencode(
-{
-  "Version": "2012-10-17",
-  "Statement": [
     {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": [
-          "s3.amazonaws.com",
-          "codedeploy.amazonaws.com",
-          "codebuild.amazonaws.com",
-          "codepipeline.amazonaws.com",
-          "lambda.amazonaws.com",
-          "apigateway.amazonaws.com",
-          "states.amazonaws.com",
-        ]
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-})
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : "sts:AssumeRole",
+          "Principal" : {
+            "Service" : [
+              "s3.amazonaws.com",
+              "codedeploy.amazonaws.com",
+              "codebuild.amazonaws.com",
+              "codepipeline.amazonaws.com",
+              "lambda.amazonaws.com",
+              "apigateway.amazonaws.com",
+              "states.amazonaws.com",
+            ]
+          },
+          "Effect" : "Allow",
+          "Sid" : ""
+        }
+      ]
+  })
 }
 
 resource "aws_iam_role_policy" "inline_test_framework_policy" {
@@ -151,7 +151,7 @@ resource "aws_codebuild_project" "tests_reports" {
     image                       = "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
-    privileged_mode = var.privileged_mode
+    privileged_mode             = var.privileged_mode
   }
 
   logs_config {
@@ -162,46 +162,48 @@ resource "aws_codebuild_project" "tests_reports" {
   }
 
   source {
-    type     = "NO_SOURCE"
-    buildspec = templatefile("${path.module}/templates/test_buildspec.yml.tpl", 
-  {  app_name = var.app_name, env_type = var.env_type })
+    type = "NO_SOURCE"
+    buildspec = templatefile("${path.module}/templates/test_buildspec.yml.tpl",
+    { app_name = var.app_name, env_type = var.env_type })
   }
 
-    tags = tomap({
-                Name="codebuild-${local.codebuild_name}",
-                environment="${var.app_name}-${var.env_type}",
-                created_by="terraform"
-    })
+  tags = tomap({
+    Name        = "codebuild-${local.codebuild_name}",
+    environment = "${var.app_name}-${var.env_type}",
+    created_by  = "terraform"
+  })
 }
 
 resource "aws_iam_role" "codebuild_role" {
-  name = "role-${local.codebuild_name}"
+  name               = "role-${local.codebuild_name}"
   assume_role_policy = aws_iam_role.test_framework.assume_role_policy
 }
 
 resource "aws_iam_role_policy" "codebuild_policy" {
-  name = "policy-${local.codebuild_name}"
-  role = aws_iam_role.codebuild_role.id
+  name   = "policy-${local.codebuild_name}"
+  role   = aws_iam_role.codebuild_role.id
   policy = data.aws_iam_policy_document.codebuild_role_policy.json
 }
 
 module "integration_runner" {
-  source = "../integration-runner"
-  app_name = var.app_name
-  env_type = var.env_type
-  role     = aws_iam_role.test_framework.arn
+  source                   = "../integration-runner"
+  app_name                 = var.app_name
+  env_type                 = var.env_type
+  role                     = aws_iam_role.test_framework.arn
   integration_tests_bucket = aws_s3_bucket.tests_bucket.bucket
-  postman_collections = var.postman_collections
-  environment_variables = local.lambda_env_variables
+  postman_collections      = var.postman_collections
+  environment_variables    = local.lambda_env_variables
+  tribe_vpcs                = var.tribe_vpcs
 }
 
 module "stress_runner" {
-  source = "../stress-runner"
-  app_name = var.app_name
-  env_type = var.env_type
-  threshold = var.threshold
-  role     = aws_iam_role.test_framework.arn
-  stress_tests_bucket = aws_s3_bucket.tests_bucket.bucket
-  jmx_file_path = var.jmx_file_path
+  source                = "../stress-runner"
+  app_name              = var.app_name
+  env_type              = var.env_type
+  threshold             = var.threshold
+  role                  = aws_iam_role.test_framework.arn
+  stress_tests_bucket   = aws_s3_bucket.tests_bucket.bucket
+  jmx_file_path         = var.jmx_file_path
   environment_variables = local.lambda_env_variables
+  tribe_vpcs             = var.tribe_vpcs
 }

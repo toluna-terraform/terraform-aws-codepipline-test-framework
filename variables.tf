@@ -44,3 +44,8 @@ variable "jmeter_version" {
 variable "domain" {
   type = string
 }
+
+variable "tribe_vpcs" {
+  description = "ID for the lambda's VPC"
+  default     = {}
+}

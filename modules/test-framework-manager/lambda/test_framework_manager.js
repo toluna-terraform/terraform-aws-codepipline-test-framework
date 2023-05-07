@@ -124,11 +124,61 @@ exports.handler = function (event, context, callback) {
   }
 };
 
+async function integrationRunnerExists() {
+      if (app_config['CONFIG_DETAILS'].shared_vpc_env == ''){
+        var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`
+      } else {
+        var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-${app_config['CONFIG_DETAILS'].shared_vpc_env}-integration-runner`
+      }
+      var params = { 
+       FunctionName: function_name
+      }
+      return await new Promise((resolve, reject) => {
+        setTimeout(function () {
+          lambda.getFunction(params, function (err, data) {
+          if (err) {
+            console.log(`runner not found setting default`);
+            resolve(`${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`);
+          }// an error occurred
+          else {
+            resolve(`${process.env.APP_NAME}-${process.env.ENV_TYPE}-${app_config['CONFIG_DETAILS'].shared_vpc_env}-integration-runner`);
+          }
+        });
+        }, 1000);
+  });
+}
+
+
+async function stressRunnerExists() {
+      if (app_config['CONFIG_DETAILS'].shared_vpc_env == ''){
+        var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`
+      } else {
+        var function_name = `${process.env.APP_NAME}-${process.env.ENV_TYPE}-${app_config['CONFIG_DETAILS'].shared_vpc_env}-stress-runner`
+      }
+      var params = { 
+       FunctionName: function_name
+      }
+      return await new Promise((resolve, reject) => {
+        setTimeout(function () {
+          lambda.getFunction(params, function (err, data) {
+          if (err) {
+            console.log(`runner not found setting default`);
+            resolve(`${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`);
+          }// an error occurred
+          else {
+            resolve(`${process.env.APP_NAME}-${process.env.ENV_TYPE}-${app_config['CONFIG_DETAILS'].shared_vpc_env}-stress-runner`);
+          }
+        });
+        }, 1000);
+  });
+}
+
 // calls integration-runner 
 async function runIntegrationTest(app_config) {
-  console.log("calling integration-runner ...");
+  console.log(`calling integration-runner ...`);
+  var function_name = await integrationRunnerExists()
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-integration-runner`,
+    FunctionName: function_name,
     InvocationType: "RequestResponse",
     Payload: JSON.stringify({
       deploymentId: `${deploymentId}`,
@@ -159,9 +209,10 @@ function runStressTest(app_config) {
   let port = 4443;
   if (deploymentType == "AppMesh")
     port = 443;
-  console.log("calling stress-runner ...");
+  console.log(`calling integration-runner ...`);
+  var function_name = stressRunnerExists()
   var params = {
-    FunctionName: `${process.env.APP_NAME}-${process.env.ENV_TYPE}-stress-runner`,
+    FunctionName: function_name,
     InvocationType: "Event",
     Payload: JSON.stringify({
       runIntegrationTests: runIntegrationTests,
@@ -481,6 +532,11 @@ async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN, ENVIRONMENT) {
           configMap['pipeline_type'] = selectedEnv.pipeline_type;
         } catch {
           configMap['pipeline_type'] = 'dev';
+        }
+        try {
+          configMap['shared_vpc_env'] = selectedEnv.shared_vpc_env;
+        } catch {
+          configMap['shared_vpc_env'] = '';
         }
         configMap['environment'] = ENVIRONMENT;
         resolve(configMap);

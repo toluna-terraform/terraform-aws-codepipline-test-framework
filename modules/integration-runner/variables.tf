@@ -25,16 +25,9 @@ variable "integration_tests_bucket" {
   default     = null
 }
 
-variable "vpc_subnet_ids" {
-  type        = list(string)
-  description = "Subnet ids that the lambda should be in."
-  default     = []
-}
-
-variable "vpc_id" {
-  type        = string
+variable "tribe_vpcs" {
   description = "ID for the lambda's VPC"
-  default     = null
+  default     = {}
 }
 
 variable "role" {
