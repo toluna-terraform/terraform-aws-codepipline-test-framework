@@ -14,11 +14,18 @@ resource "aws_s3_bucket" "tests_bucket" {
   bucket        = "${var.app_name}-${var.env_type}-tests"
 }
 
+resource "aws_s3_bucket_ownership_controls" "tests_bucket" {
+  bucket = aws_s3_bucket.tests_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_acl" "tests_bucket" {
   bucket = aws_s3_bucket.tests_bucket.id
   acl    = "private"
     depends_on = [
-      aws_s3_bucket.tests_bucket
+      aws_s3_bucket.tests_bucket,aws_s3_bucket_ownership_controls.tests_bucket
     ]
 }
 
