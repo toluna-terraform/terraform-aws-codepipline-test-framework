@@ -50,7 +50,7 @@ resource "aws_codebuild_project" "stress_runner" {
 resource "aws_lambda_layer_version" "lambda_layer_stress" {
   filename            = "${path.module}/layer/layer.zip"
   layer_name          = "postman"
-  compatible_runtimes = ["nodejs16.x"]
+  compatible_runtimes = ["nodejs20.x"]
   source_code_hash    = filebase64sha256("${path.module}/layer/layer.zip")
 }
 
@@ -67,7 +67,7 @@ resource "aws_lambda_function" "stress_runner" {
   function_name    = each.key == "default" ? "${var.app_name}-${var.env_type}-stress-runner" : "${var.app_name}-${var.env_type}-${each.key}-stress-runner"
   role             = var.role
   handler          = "stress_runner.handler"
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   layers           = [aws_lambda_layer_version.lambda_layer_stress.arn]
   timeout          = 180
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
@@ -89,7 +89,7 @@ resource "aws_lambda_function" "stress_runner_default" {
   function_name    = "${var.app_name}-${var.env_type}-stress-runner"
   role             = var.role
   handler          = "stress_runner.handler"
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   layers           = [aws_lambda_layer_version.lambda_layer_stress.arn]
   timeout          = 180
   source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
