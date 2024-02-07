@@ -1,29 +1,24 @@
 variable "test_framework_config" {
-  #type = map(string)
 }
 
 variable "app_name" {
   type     = string
   default  = null
-  nullable = true
 }
 
 variable "env_type" {
   type     = string
   default  = null
-  nullable = true
 }
 
 variable "app_envs" {
   type     = list(string)
   default  = null
-  nullable = true
 }
 
 variable "environment_variables_parameter_store" {
   type = map(string)
   default  = null
-  nullable = true
 }
 
 variable "environment_variables" {
@@ -38,14 +33,12 @@ variable "postman_collections" {
     environment = string
   }))
   default     = null
-  nullable    = true
   description = "A list of postman collections (and environments) to run during the execution of the lambda function (in order). Collections and environments from the Postman API must be the collection/environment id"
 }
 
 variable "jmx_file_path" {
   type     = string
   default  = null
-  nullable = true
 }
 
 variable "jmeter_version" {
@@ -56,7 +49,6 @@ variable "jmeter_version" {
 variable "domain" {
   type     = string
   default  = null
-  nullable = true
 }
 
 variable "tribe_vpcs" {
@@ -67,5 +59,4 @@ variable "tribe_vpcs" {
   }))
   description = "ID for the lambda's VPC"
   default  = null
-  nullable = true
 }
