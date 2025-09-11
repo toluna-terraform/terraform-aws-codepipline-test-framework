@@ -1,3 +1,7 @@
+locals {
+  tribe                                = data.aws_ssm_parameter.tribe.value
+}
+  
 module "test_framework_manager" {
   source                                = "./modules/test-framework-manager"
   app_name                              = var.app_name
@@ -10,6 +14,8 @@ module "test_framework_manager" {
   postman_collections                   = var.postman_collections
   jmx_file_path                         = var.jmx_file_path
   tribe_vpcs                             = var.tribe_vpcs
+  tribe_config_bucket                   = "toluna-${local.tribe}-tf-config-data" 
+  tribe_state_bucket                   = "toluna-${local.tribe}-tf-state-data" 
 }
 
 resource "aws_codebuild_report_group" "TestReport" {

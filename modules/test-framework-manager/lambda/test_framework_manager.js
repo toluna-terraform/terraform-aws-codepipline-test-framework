@@ -1,5 +1,4 @@
 const AWS = require('aws-sdk');
-const Consul = require('consul');
 const cd = new AWS.CodeDeploy({ apiVersion: '2014-10-06', region: 'us-east-1' });
 const cb = new AWS.CodeBuild({ apiVersion: '2016-10-06', region: 'us-east-1' });
 const elbv2 = new AWS.ELBv2({ apiVersion: '2015-12-01' });
@@ -7,6 +6,8 @@ const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 const apigw = new AWS.APIGateway({ apiVersion: '2015-07-09' });
 const ssm = new AWS.SSM({ apiVersion: '2014-11-06', region: 'us-east-1' });
 const sf = new AWS.StepFunctions({ apiVersion: '2016-11-23', region: 'us-east-1' });
+const s3 = new AWS.S3({ apiVersion: '2014-11-06', region: 'us-east-1' });
+
 
 let deploymentId;
 let lifecycleEventHookExecutionId;
@@ -19,6 +20,8 @@ let env_color;
 let deploymentType; // values ECS (CodeDeploy), SAM, AppMesh
 let taskToken;
 let app_config = {};
+let tribe_config_bucket = process.env.TRIBE_CONFIG_BUCKET;
+
 
 exports.handler = function (event, context, callback) {
   console.log('event', event);
@@ -66,53 +69,45 @@ exports.handler = function (event, context, callback) {
             function (value) {
               getReportGroupDetails(value).then(function (reportGroups) { app_config['REPORT_GROUPS'] = reportGroups });
               getLBDetails(value).then(function (result) { console.log(`SETTING LB_NAME::::${result}`);app_config['LB_NAME'] = result });
-              getConsulAddress(value).then(
-                function (value) {
-                  getConsulToken(value).then(
-                    function (value) {
-                      getConsulConfig(value.address, value.token, value.deploy_details.environment).then(
-                        function (configDetails) {
-                          app_config['CONFIG_DETAILS'] = configDetails;
-                          console.log("app_config = " + app_config);
-                          console.log("app_config run_integration_tests flag = " + app_config['CONFIG_DETAILS'].run_integration_tests);
-                          //app_config['CONFIG_DETAILS'].run_integration_tests = true;
-                          //app_config['CONFIG_DETAILS'].run_stress_tests = true;
-                          console.log("app_config run_stress_tests flag = " + app_config['CONFIG_DETAILS'].run_stress_tests);
-                          if (deploymentType == "AppMesh") {
-                            app_config['CONFIG_DETAILS'].deploymentId = "dummy_deployment_id";
-                            app_config['CONFIG_DETAILS'].environment = event.environment;
-                            app_config['REPORT_GROUPS'].integration_report_group_arn = event.integration_report_group;
-                            app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
-                            app_config['LB_NAME'] = event.lb_name;
-                          }
-                          console.log(app_config);
-                          if (app_config['CONFIG_DETAILS'].run_integration_tests) {
-                            runIntegrationTest(app_config).then(
-                              function (result) {
-                                result = JSON.parse(result);
-                                if (result.status === 'SUCCESSFUL' && app_config['CONFIG_DETAILS'].run_stress_tests) {
-                                  console.log('Integration tests passed, now starting Stress tests');
-                                  runStressTest(app_config);
-                                } else if (result.status === 'SUCCESSFUL' && !app_config['CONFIG_DETAILS'].run_stress_tests) {
-                                  console.log(`update deploy success:::${deploymentId}, ${combinedRunner}, ${lifecycleEventHookExecutionId},${event}, false`);
-                                  updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, false);
-                                } else {
-                                  console.log(`update deploy fail:::${deploymentId}, ${combinedRunner}, ${lifecycleEventHookExecutionId},${event}, false`);
-                                  updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, true);
-                                }
-                              }
-                            );
-
-                          }
-                          else if (app_config['CONFIG_DETAILS'].run_stress_tests) {
-                            //  runStressTest();
-                            //parse result if failed, fail deploy
-                            console.log("STRESS:::::");
-                          }
+              getAppEnvConfig( value.environment).then(
+                function (configDetails) {
+                  app_config['CONFIG_DETAILS'] = configDetails;
+                  console.log("app_config = " + app_config);
+                  console.log("app_config run_integration_tests flag = " + app_config['CONFIG_DETAILS'].run_integration_tests);
+                  //app_config['CONFIG_DETAILS'].run_integration_tests = true;
+                  //app_config['CONFIG_DETAILS'].run_stress_tests = true;
+                  console.log("app_config run_stress_tests flag = " + app_config['CONFIG_DETAILS'].run_stress_tests);
+                  if (deploymentType == "AppMesh") {
+                    app_config['CONFIG_DETAILS'].deploymentId = "dummy_deployment_id";
+                    app_config['CONFIG_DETAILS'].environment = event.environment;
+                    app_config['REPORT_GROUPS'].integration_report_group_arn = event.integration_report_group;
+                    app_config['REPORT_GROUPS'].stress_report_group_arn = event.stress_report_group;
+                    app_config['LB_NAME'] = event.lb_name;
+                  }
+                  console.log(app_config);
+                  if (app_config['CONFIG_DETAILS'].run_integration_tests) {
+                    runIntegrationTest(app_config).then(
+                      function (result) {
+                        result = JSON.parse(result);
+                        if (result.status === 'SUCCESSFUL' && app_config['CONFIG_DETAILS'].run_stress_tests) {
+                          console.log('Integration tests passed, now starting Stress tests');
+                          runStressTest(app_config);
+                        } else if (result.status === 'SUCCESSFUL' && !app_config['CONFIG_DETAILS'].run_stress_tests) {
+                          console.log(`update deploy success:::${deploymentId}, ${combinedRunner}, ${lifecycleEventHookExecutionId},${event}, false`);
+                          updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, false);
+                        } else {
+                          console.log(`update deploy fail:::${deploymentId}, ${combinedRunner}, ${lifecycleEventHookExecutionId},${event}, false`);
+                          updateRunner(deploymentId, combinedRunner, lifecycleEventHookExecutionId, event, true);
                         }
-                      );
-                    }
-                  );
+                      }
+                    );
+
+                  }
+                  else if (app_config['CONFIG_DETAILS'].run_stress_tests) {
+                    //  runStressTest();
+                    //parse result if failed, fail deploy
+                    console.log("STRESS:::::");
+                  }
                 }
               );
             }
@@ -468,81 +463,46 @@ async function getReportGroupDetails(deploy_details) {
   });
 }
 
-async function getConsulToken(value) {
-  var paramsToken = {
-    Name: '/infra/consul_http_token', /* required */
-    WithDecryption: true
-  };
-  return await new Promise((resolve, reject) => {
-    setTimeout(function () {
-      ssm.getParameter(paramsToken, function (err, data) {
-        if (err) reject(err, err.stack); // an error occurred
-        else {
-          resolve({ "address": value.address, "token": data.Parameter.Value, "deploy_details": value.deploy_details });
-        }
-      });
-    }, 1000);
-  });
-}
 
-async function getConsulAddress(deploy_details) {
-  var paramsAddr = {
-    Name: '/infra/consul_url', /* required */
-    WithDecryption: true
-  };
-  return await new Promise((resolve, reject) => {
-    setTimeout(function () {
-      ssm.getParameter(paramsAddr, function (err, data) {
-        if (err) reject(err, err.stack); // an error occurred
-        else {
-          resolve({ "address": data.Parameter.Value, "deploy_details": deploy_details });
-        }
-      });
-    }, 1000);
-  });
-}
+async function getAppEnvConfig( ENVIRONMENT ) {
+  console.log("getAppEnvConfig in progress...")
+  console.log(`ENVIRONMENT = ${ENVIRONMENT}`);
+  const prefixedKey = `${process.env.APP_NAME}/app-env.json`
 
-async function getConsulConfig(CONSUL_ADDRESS,CONSUL_TOKEN, ENVIRONMENT) {
-  const consul = new Consul({
-    host: `${CONSUL_ADDRESS}`,
-    secure: true,
-    port: 443,
-    promisify: true,
-    defaults: { token: `${CONSUL_TOKEN}` }
-  });
-  let configMap = {};
-  return await new Promise((resolve, reject) => {
-    setTimeout(function () {
-      consul.kv.get(`terraform/${process.env.APP_NAME}/app-env.json`, function (err, result) {
-        if (err) reject(err);
-        else if (result === undefined) reject('key not found');
-        let app_json = JSON.parse(result.Value);
-        let selectedEnv = app_json[`${ENVIRONMENT}`];
-        try {
-          configMap['run_stress_tests'] = selectedEnv.run_stress_tests;
-        } catch {
-          configMap['run_stress_tests'] = false;
-        }
-        try {
-          configMap['run_integration_tests'] = selectedEnv.run_integration_tests;
-        } catch {
-          configMap['run_integration_tests'] = false;
-        }
-        try {
-          configMap['pipeline_type'] = selectedEnv.pipeline_type;
-        } catch {
-          configMap['pipeline_type'] = 'dev';
-        }
-        try {
-          configMap['shared_vpc_env'] = selectedEnv.shared_vpc_env;
-        } catch {
-          configMap['shared_vpc_env'] = '';
-        }
-        configMap['environment'] = ENVIRONMENT;
-        resolve(configMap);
-      });
-    }, 1000);
-  });
+  try {
+    const getObjectResp = await s3.getObject({ Bucket: tribe_config_bucket, Key: prefixedKey }).promise();
+    const getObjectRespStr = getObjectResp.Body.toString("utf-8");
+    const app_json = JSON.parse(getObjectRespStr);
+
+    let configMap = {};
+    let selectedEnv = app_json[`${ENVIRONMENT}`];
+    try {
+      configMap['run_stress_tests'] = selectedEnv.run_stress_tests;
+    } catch {
+      configMap['run_stress_tests'] = false;
+    }
+    try {
+      configMap['run_integration_tests'] = selectedEnv.run_integration_tests;
+    } catch {
+      configMap['run_integration_tests'] = false;
+    }
+    try {
+      configMap['pipeline_type'] = selectedEnv.pipeline_type;
+    } catch {
+      configMap['pipeline_type'] = 'dev';
+    }
+    try {
+      configMap['shared_vpc_env'] = selectedEnv.shared_vpc_env;
+    } catch {
+      configMap['shared_vpc_env'] = '';
+    }
+    configMap['environment'] = ENVIRONMENT;
+
+    return configMap ;
+
+  } catch (e) {
+    throw new Error(`Error reading s3://${tribe_config_bucket}/${prefixedKey}: ${e.message}`);
+  }
 }
 
 

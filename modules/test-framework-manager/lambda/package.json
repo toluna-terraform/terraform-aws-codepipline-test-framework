@@ -15,8 +15,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "aws-sdk": "^2.945.0",
-    "consul": "^0.40.0"
+    "aws-sdk": "2.945.0"
   },
   "devDependencies": {
     "@zeit/ncc": "^0.22.1"

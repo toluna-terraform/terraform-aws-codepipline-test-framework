@@ -6,6 +6,7 @@ locals {
     ENV_TYPE               = var.env_type
     DOMAIN                 = var.domain
     TEST_ENV_VAR_OVERRIDES = jsonencode(var.test_env_var_overrides)
+    TRIBE_CONFIG_BUCKET    = var.tribe_config_bucket
   }
 }
 
@@ -164,7 +165,9 @@ resource "aws_codebuild_project" "tests_reports" {
   source {
     type = "NO_SOURCE"
     buildspec = templatefile("${path.module}/templates/test_buildspec.yml.tpl",
-    { app_name = var.app_name, env_type = var.env_type })
+    { app_name = var.app_name, 
+      env_type = var.env_type, 
+      TRIBE_STATE_BUCKET = var.tribe_state_bucket })
   }
 
   tags = tomap({
