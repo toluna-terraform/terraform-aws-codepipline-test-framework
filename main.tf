@@ -1,5 +1,5 @@
 locals {
-  tribe                                = data.aws_ssm_parameter.tribe.value
+  tribe                                = lower(data.aws_ssm_parameter.tribe.value)
 }
   
 module "test_framework_manager" {
