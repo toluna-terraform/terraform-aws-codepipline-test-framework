@@ -9,3 +9,7 @@ data "aws_ssm_parameter" "ado_password" {
 data "aws_ssm_parameter" "ado_user" {
   name = "/app/ado_user"
 }
+
+data "aws_ssm_parameter" "tribe" {
+  name = "/infra/tribe"
+}

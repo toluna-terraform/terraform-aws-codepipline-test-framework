@@ -70,3 +70,14 @@ variable "tribe_vpcs" {
   description = "ID for the lambda's VPC"
   default     = {}
 }
+
+variable "tribe_config_bucket" {
+  type = string
+  default = ""  
+}
+
+
+variable "tribe_state_bucket" {
+  type = string
+  default = ""  
+}

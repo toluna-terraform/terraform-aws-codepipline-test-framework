@@ -4,8 +4,6 @@ env:
   parameter-store:
     BB_USER: "/app/bb_user"  
     BB_PASS: "/app/bb_app_pass"
-    CONSUL_URL: "/infra/consul_url"
-    CONSUL_HTTP_TOKEN: "/infra/${app_name}-${env_type}/consul_http_token"
 
 phases:
   pre_build:

@@ -6,7 +6,7 @@ This module supports running integration & stress tests intended as a post insta
 
 The output is then uploaded to S3 as junit and html reports and publish under codebuild with a unique report group.
 
-Depending on the flags set in consul application configuration, integraton_tests and stress_tests may be performed or skipped. 
+Depending on the flags set in s3 backend application configuration, integraton_tests and stress_tests may be performed or skipped. 
 
 This framework works for differnt DeploymentTypes (ECS / SAM / AppMesh).
 
